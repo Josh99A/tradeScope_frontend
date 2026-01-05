@@ -1,0 +1,97 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ========== DESIGN TOKENS ========== */
+@theme {
+  /* Core backgrounds */
+  --color-ts-bg-main: var(--ts-bg-main);
+  --color-ts-bg-card: var(--ts-bg-card);
+
+  /* Text */
+  --color-ts-text-main: var(--ts-text-main);
+  --color-ts-text-muted: var(--ts-text-muted);
+
+  /* Borders */
+  --color-ts-border: var(--ts-border);
+
+  /* Brand */
+  --color-ts-primary: var(--ts-primary);
+  --color-ts-accent: var(--ts-accent);
+
+  /* Trading actions */
+  --color-ts-success: var(--ts-success);
+  --color-ts-danger: var(--ts-danger);
+  --color-ts-warning: var(--ts-warning);
+
+  /* Charts */
+  --color-ts-candle-up: var(--ts-candle-up);
+  --color-ts-candle-down: var(--ts-candle-down);
+  --color-ts-grid: var(--ts-grid);
+}
+
+
+/* ========== LIGHT MODE ========== */
+:root {
+  /* Backgrounds */
+  --ts-bg-main: #F8FAFC;
+  --ts-bg-card: #FFFFFF;
+
+  /* Text */
+  --ts-text-main: #0F172A;
+  --ts-text-muted: #64748B;
+
+  /* Borders */
+  --ts-border: #E2E8F0;
+
+  /* Brand */
+  --ts-primary: #1E6FFF;
+  --ts-accent: #5B6CFF;
+
+  /* Trading */
+  --ts-success: #16C784;
+  --ts-danger: #EA3943;
+  --ts-warning: #F0B90B;
+
+  /* Charts */
+  --ts-candle-up: #16C784;
+  --ts-candle-down: #EA3943;
+  --ts-grid: #E5E7EB;
+}
+
+
+/* ========== DARK MODE ========== */
+.dark {
+  /* Backgrounds */
+  --ts-bg-main: #0B1220;
+  --ts-bg-card: #111A2E;
+
+  /* Text */
+  --ts-text-main: #E6ECF5;
+  --ts-text-muted: #8A94A6;
+
+  /* Borders */
+  --ts-border: #1F2A44;
+
+  /* Brand */
+  --ts-primary: #1E6FFF;
+  --ts-accent: #5B6CFF;
+
+  /* Trading */
+  --ts-success: #16C784;
+  --ts-danger: #EA3943;
+  --ts-warning: #F0B90B;
+
+  /* Charts */
+  --ts-candle-up: #16C784;
+  --ts-candle-down: #EA3943;
+  --ts-grid: #1C2541;
+}
+
+
+/* ========== BASE ========== */
+@layer base {
+  body {
+    @apply bg-ts-bg-main text-ts-text-main antialiased;
+  }
+}
+
