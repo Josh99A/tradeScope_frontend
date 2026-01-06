@@ -3,6 +3,9 @@
 
 /* ========== DESIGN TOKENS ========== */
 @theme {
+  --font-ts-sans: Inter, system-ui, sans-serif;
+  --font-ts-mono: "JetBrains Mono", monospace;
+
   /* Core backgrounds */
   --color-ts-bg-main: var(--ts-bg-main);
   --color-ts-bg-card: var(--ts-bg-card);
@@ -27,6 +30,15 @@
   --color-ts-candle-up: var(--ts-candle-up);
   --color-ts-candle-down: var(--ts-candle-down);
   --color-ts-grid: var(--ts-grid);
+
+  /* UI states */
+  --color-ts-hover: var(--ts-hover);
+  --color-ts-active: var(--ts-active);
+  --color-ts-disabled: var(--ts-disabled);
+
+  /* Inputs */
+  --color-ts-input-bg: var(--ts-input-bg);
+  --color-ts-input-border: var(--ts-input-border);
 }
 
 
@@ -56,6 +68,13 @@
   --ts-candle-up: #16C784;
   --ts-candle-down: #EA3943;
   --ts-grid: #E5E7EB;
+
+  --ts-hover: #EEF2FF;
+  --ts-active: #E0E7FF;
+  --ts-disabled: #CBD5E1;
+
+  --ts-input-bg: #FFFFFF;
+  --ts-input-border: #CBD5E1;
 }
 
 
@@ -85,13 +104,24 @@
   --ts-candle-up: #16C784;
   --ts-candle-down: #EA3943;
   --ts-grid: #1C2541;
+
+  --ts-hover: #1A2440;
+  --ts-active: #22305A;
+  --ts-disabled: #334155;
+
+  --ts-input-bg: #0F172A;
+  --ts-input-border: #1F2A44;
 }
 
 
 /* ========== BASE ========== */
 @layer base {
   body {
+    font-family: var(--font-ts-sans);
     @apply bg-ts-bg-main text-ts-text-main antialiased;
+  }
+  code, .font-mono {
+    font-family: var(--font-ts-mono);
   }
 }
 

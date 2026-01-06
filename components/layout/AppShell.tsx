@@ -1,4 +1,3 @@
-import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import SideNav from "../navigation/SideNav";
 
