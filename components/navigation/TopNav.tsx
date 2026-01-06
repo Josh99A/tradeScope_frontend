@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import ThemeToggle from "../ui/ThemeToggle";
 
 type TopNavProps = {
   isAuthenticated: boolean;
@@ -74,6 +75,7 @@ const TopNav = ({ isAuthenticated, user }: TopNavProps) => {
               </Link>
             </div>
           )}
+          <ThemeToggle />
         </nav>
       </div>
     </header>
