@@ -35,9 +35,9 @@ const MobileDrawer = ({
         
         {/* Header / Logo */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-ts-border">
-          <div className="text-lg font-bold text-ts-text-main">
+            <Link href="/" className="text-lg font-bold text-ts-text-main hover:opacity-80 transition">
             Trade<span className="text-ts-primary">Scope</span>
-          </div>
+            </Link>
 
           <button
             onClick={onClose}
