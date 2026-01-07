@@ -21,7 +21,7 @@ export default function PublicLayout({
 /* Wrapper needed because layouts can’t be hooks directly */
 function TopNavWrapper() {
   const { user, isAuthenticated } = useAuth();
-  console.log("PublicLayout TopNavWrapper", { user, isAuthenticated });
+  
 
   return (
     <TopNav

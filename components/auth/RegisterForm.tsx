@@ -21,6 +21,12 @@ const RegisterForm = () => {
         {/* Form */}
         <form className="space-y-5">
           <FormField
+            label="Username"
+            type="text"
+            placeholder="Enter your username"
+          />
+
+          <FormField
             label="Email"
             type="email"
             placeholder="you@example.com"

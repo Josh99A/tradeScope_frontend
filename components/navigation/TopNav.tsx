@@ -120,6 +120,17 @@ function NavLinks({
           >
             Dashboard
           </Link>
+          <Link
+          href="/logout"
+          onClick={onNavigate}
+          className={cn(
+            mobile
+              ? "mt-2 bg-ts-primary text-white text-center py-2 rounded-md"
+              : "bg-ts-primary text-white px-4 py-2 rounded-md hover:opacity-90"
+          )}
+        >
+          Logout
+        </Link>
 
           <Link
             href="/profile"
