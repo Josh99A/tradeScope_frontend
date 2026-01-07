@@ -1,4 +1,3 @@
-import Topbar from "./Topbar";
 import SideNav from "../navigation/SideNav";
 
 export default function AppShell({

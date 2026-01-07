@@ -3,30 +3,34 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import clsx from "clsx";
 
-type Props = {
+export default function NavItem({
+  label,
+  href,
+  icon: Icon,
+  onClick,
+}: {
   label: string;
   href: string;
   icon: any;
-};
-
-export default function NavItem({ label, href, icon: Icon }: Props) {
+  onClick?: () => void;
+}) {
   const pathname = usePathname();
-  const isActive = pathname.startsWith(href);
+  const isActive = pathname === href;
 
   return (
     <Link
       href={href}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition",
-        "hover:bg-ts-border",
+      onClick={onClick}
+      className={clsx(
+        "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition",
         isActive
-          ? "bg-ts-border text-ts-primary"
-          : "text-ts-text-muted"
+          ? "bg-ts-primary/10 text-ts-primary"
+          : "text-ts-text-muted hover:bg-ts-hover hover:text-ts-text-main"
       )}
     >
-      <Icon className="h-4 w-4" />
+      <Icon size={18} />
       <span>{label}</span>
     </Link>
   );
