@@ -4,15 +4,16 @@
 import NavItem from "./NavItem";
 import { NAV_ITEMS } from "./nav.config";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import Link from "next/link";
 
 export default function SideNav() {
   return (
     <aside className="hidden md:flex w-64 flex-col border-r border-ts-border bg-ts-bg-card">
       
       {/* Logo */}
-      <div className="px-6 py-5 text-lg font-bold text-ts-text-main">
-        Trade<span className="text-ts-primary">Scope</span>
-      </div>
+        <Link href="/" className="px-6 py-5 text-lg font-bold text-ts-text-main hover:opacity-80 transition-opacity">
+          Trade<span className="text-ts-primary">Scope</span>
+        </Link>
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-6">

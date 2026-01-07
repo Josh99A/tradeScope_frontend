@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ThemeToggle from "../ui/ThemeToggle";  
+import ThemeToggle from "../ui/ThemeToggle";
 
 type TopNavProps = {
   isAuthenticated: boolean;
@@ -15,7 +15,7 @@ type TopNavProps = {
   };
 };
 
-const TopNav = ({ isAuthenticated, user }: TopNavProps) => {
+export default function TopNav({ isAuthenticated, user }: TopNavProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -24,20 +24,20 @@ const TopNav = ({ isAuthenticated, user }: TopNavProps) => {
         {/* Logo */}
         <Link
           href="/"
-          className="text-xl font-bold text-ts-primary tracking-tight"
+          className="text-lg font-bold tracking-tight text-ts-text-main"
         >
-          TradeScope
+          Trade<span className="text-ts-primary">Scope</span>
         </Link>
 
-        {/* Desktop Nav */}
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
           <NavLinks isAuthenticated={isAuthenticated} user={user} />
         </nav>
 
         {/* Mobile Menu Button */}
         <button
-          onClick={() => setOpen(!open)}
-          className="md:hidden p-2 rounded-md hover:bg-ts-bg-card transition"
+          onClick={() => setOpen((v) => !v)}
+          className="md:hidden p-2 rounded-md hover:bg-ts-hover active:bg-ts-active transition"
           aria-label="Toggle menu"
         >
           {open ? <X size={22} /> : <Menu size={22} />}
@@ -45,23 +45,26 @@ const TopNav = ({ isAuthenticated, user }: TopNavProps) => {
       </div>
 
       {/* Mobile Menu */}
-      {open && (
-        <div className="md:hidden border-t border-ts-border bg-ts-bg-main">
-          <nav className="px-4 py-4 flex flex-col gap-3">
-            <NavLinks
-              isAuthenticated={isAuthenticated}
-              user={user}
-              mobile
-              onNavigate={() => setOpen(false)}
-            />
-          </nav>
-        </div>
-      )}
+      <div
+        className={cn(
+          "md:hidden overflow-hidden transition-all duration-200",
+          open ? "max-h-[500px] border-t border-ts-border" : "max-h-0"
+        )}
+      >
+        <nav className="px-4 py-4 space-y-4 bg-ts-bg-main">
+          <NavLinks
+            isAuthenticated={isAuthenticated}
+            user={user}
+            mobile
+            onNavigate={() => setOpen(false)}
+          />
+        </nav>
+      </div>
     </header>
   );
 }
 
-/* ================= SHARED NAV LINKS ================= */
+/* ================= NAV LINKS ================= */
 
 function NavLinks({
   isAuthenticated,
@@ -78,29 +81,34 @@ function NavLinks({
   onNavigate?: () => void;
 }) {
   const linkClass = cn(
-    "text-sm transition",
+    "text-sm font-medium transition",
     mobile
-      ? "py-2 px-2 rounded-md hover:bg-ts-bg-card"
+      ? "px-3 py-2 rounded-md hover:bg-ts-hover active:bg-ts-active"
       : "text-ts-text-muted hover:text-ts-text-main"
   );
 
   return (
     <>
-      <Link href="/markets" onClick={onNavigate} className={linkClass}>
-        Markets
-      </Link>
+      {/* Primary Links */}
+      <div className={cn("flex gap-4", mobile && "flex-col")}>
+        <Link href="/markets" onClick={onNavigate} className={linkClass}>
+          Markets
+        </Link>
 
-      <Link href="/pricing" onClick={onNavigate} className={linkClass}>
-        Pricing
-      </Link>
+        <Link href="/pricing" onClick={onNavigate} className={linkClass}>
+          Pricing
+        </Link>
+      </div>
 
+      {/* Auth Section */}
       {!isAuthenticated ? (
         <Link
           href="/login"
           onClick={onNavigate}
           className={cn(
+            "font-medium transition",
             mobile
-              ? "mt-2 bg-ts-primary text-white text-center py-2 rounded-md"
+              ? "w-full text-center bg-ts-primary text-white py-2 rounded-md"
               : "bg-ts-primary text-white px-4 py-2 rounded-md hover:opacity-90"
           )}
         >
@@ -109,28 +117,29 @@ function NavLinks({
       ) : (
         <div
           className={cn(
-            "flex items-center gap-3",
-            mobile && "mt-3 border-t border-ts-border pt-3"
+            "flex items-center gap-4",
+            mobile && "flex-col border-t border-ts-border pt-4"
           )}
         >
           <Link
             href="/dashboard"
             onClick={onNavigate}
-            className="text-sm font-medium hover:text-ts-primary transition"
+            className={linkClass}
           >
             Dashboard
           </Link>
+
           <Link
-          href="/logout"
-          onClick={onNavigate}
-          className={cn(
-            mobile
-              ? "mt-2 bg-ts-primary text-white text-center py-2 rounded-md"
-              : "bg-ts-primary text-white px-4 py-2 rounded-md hover:opacity-90"
-          )}
-        >
-          Logout
-        </Link>
+            href="/logout"
+            onClick={onNavigate}
+            className={cn(
+              mobile
+                ? "w-full text-center bg-ts-primary text-white py-2 rounded-md"
+                : "bg-ts-primary text-white px-4 py-2 rounded-md hover:opacity-90"
+            )}
+          >
+            Logout
+          </Link>
 
           <Link
             href="/profile"
@@ -146,8 +155,11 @@ function NavLinks({
           </Link>
         </div>
       )}
-      <ThemeToggle />
+
+      {/* Theme Toggle */}
+      <div className={cn(mobile && "pt-2")}>
+        <ThemeToggle />
+      </div>
     </>
   );
 }
-export default TopNav;
