@@ -16,11 +16,10 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   // TEMP: mocked state (replace with DRF later)
-  const [user] = useState<User | null>(null);
-  // {
-  //   name: "Joshua",
-  //   avatarUrl: "/avatar-placeholder.png",
-  // }
+  const [user] = useState<User | null>({
+    name: "Joshua",
+    avatarUrl: "/avatar-placeholder.png",
+  });
 
   const value: AuthContextType = {
     user,
