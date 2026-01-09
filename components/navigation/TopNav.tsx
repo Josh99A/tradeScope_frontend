@@ -7,6 +7,7 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "../ui/ThemeToggle";
 
+
 type TopNavProps = {
   isAuthenticated: boolean;
   user?: {
@@ -147,7 +148,7 @@ function NavLinks({
             className="relative h-9 w-9 rounded-full overflow-hidden border border-ts-border hover:ring-2 hover:ring-ts-primary transition"
           >
             <Image
-              src={user?.avatarUrl || "/avatar-placeholder.png"}
+              src={user?.avatarUrl || "/Images/avatar-placeholder.jpg"}
               alt={user?.name || "Profile"}
               fill
               className="object-cover"
