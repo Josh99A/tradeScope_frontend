@@ -1,42 +1,60 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import api from "@/lib/axios";
 
 type User = {
+  id: number;
   name: string;
-  avatarUrl?: string;
+  email: string;
+  avatar?: string;
 };
 
 type AuthContextType = {
   user: User | null;
   isAuthenticated: boolean;
+  loading: boolean;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // TEMP: mocked state (replace with DRF later)
-  const [user] = useState<User | null>({
-    name: "Joshua",
-    avatarUrl: "/avatar-placeholder.png",
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const value: AuthContextType = {
-    user,
-    isAuthenticated: !!user,
+  const fetchUser = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/me");
+      setUser(res.data);
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        loading,
+        refreshUser: fetchUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  return ctx;
 }

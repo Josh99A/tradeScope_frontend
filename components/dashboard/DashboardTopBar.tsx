@@ -41,7 +41,7 @@ const  DashboardTopBar = ({
 
       <button className="p-1 rounded-full hover:bg-ts-hover transition">
         <img
-          src="/avatar.png"
+          src="/Images/avatar-placeholder.jpg"
           className="w-8 h-8 rounded-full"
           alt="User avatar"
         />

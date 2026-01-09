@@ -2,12 +2,16 @@ type FormFieldProps = {
   label: string;
   type: string;
   placeholder?: string;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
 const FormField = ({
   label,
   type,
   placeholder,
+  value,
+  onChange,
 }: FormFieldProps) => {
   return (
     <div>
@@ -15,6 +19,8 @@ const FormField = ({
       <input
         type={type}
         placeholder={placeholder}
+        value={value}
+        onChange={onChange}
         className="
           w-full rounded-lg px-4 py-3 text-sm
           bg-ts-bg-main border border-ts-border
