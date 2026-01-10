@@ -17,10 +17,7 @@ export function proxy(request: NextRequest) {
     path.startsWith(route)
   );
 
-  if (path.startsWith("/dashboard")) {
-    console.log(isProtected, hasToken);
-  }
-
+  
   if (isProtected && !hasToken) {
     
     return NextResponse.redirect(new URL("/login", request.url));

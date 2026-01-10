@@ -1,18 +1,30 @@
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
-  const cookie = req.headers.get("cookie") || "";
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
 
-  const res = await fetch(`${process.env.BACKEND_URL}/api/users/register/`, {
-    headers: {
-      Cookie: cookie,
-    },
-  });
+    const res = await fetch(
+      `${process.env.BACKEND_URL}/api/users/register/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+        credentials: "include",
+      }
+    );
 
-  if (!res.ok) {
-    return NextResponse.json(null, { status: 401 });
+    const data = await res.json();
+
+    return NextResponse.json(data, {
+      status: res.status,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Registration failed" },
+      { status: 500 }
+    );
   }
-
-  const user = await res.json();
-  return NextResponse.json(user);
 }
