@@ -7,6 +7,7 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "../ui/ThemeToggle";
 import { Button } from "../ui/Button";
+import LogoutButton from "../ui/LogoutButton";
 
 
 type TopNavProps = {
@@ -131,17 +132,7 @@ function NavLinks({
             Dashboard
           </Link>
 
-          <Link
-            href="/logout"
-            onClick={onNavigate}
-            className={cn(
-              mobile
-                ? "w-full text-center bg-ts-primary text-white py-2 rounded-md block"
-                : "bg-ts-primary text-white px-4 py-2 rounded-md hover:opacity-90"
-            )}
-          >
-            Logout
-          </Link>
+          <LogoutButton mobile={mobile} />
 
           <Link
             href="/profile"

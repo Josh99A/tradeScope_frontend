@@ -3,6 +3,7 @@
 import { Menu, Bell, Sun, Moon } from "lucide-react";
 import ThemeToggle from "../ui/ThemeToggle";
 import { Button } from "../ui/Button";
+import LogoutButton from "../ui/LogoutButton";
 
 const  DashboardTopBar = ({
   onMenuClick,
@@ -30,7 +31,7 @@ const  DashboardTopBar = ({
 
     {/* Right */}
     <div className="flex items-center gap-2">
-      <ThemeToggle/>
+      
 
       <Button
         className="relative p-2 rounded-md hover:bg-ts-hover active:bg-ts-active transition"
@@ -39,6 +40,7 @@ const  DashboardTopBar = ({
         <Bell size={18} />
         <span className="absolute top-1 right-1 h-2 w-2 bg-ts-danger rounded-full" />
       </Button>
+      <LogoutButton/>
 
       <Button className="p-1 rounded-full hover:bg-ts-hover transition">
         <img
@@ -47,6 +49,7 @@ const  DashboardTopBar = ({
           alt="User avatar"
         />
       </Button>
+      <ThemeToggle/>
     </div>
   </div>
 </header>
