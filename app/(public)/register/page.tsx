@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import FormField from "@/components/auth/FormField";
 import { registerUser, loginUser } from "@/lib/auth";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { Button } from "@/components/ui/Button";
 
 const Page = () => {
   const router = useRouter();
@@ -101,7 +102,7 @@ const Page = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
             className={cn(
@@ -112,7 +113,7 @@ const Page = () => {
             )}
           >
             {loading ? "Creating account..." : "Create Account"}
-          </button>
+          </Button>
         </form>
 
         {/* Legal */}

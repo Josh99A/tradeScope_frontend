@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '../ui/Button'
 
 const CallToAction = () => {
   return (
@@ -11,9 +12,9 @@ const CallToAction = () => {
           No credit card required. Practice with paper trading.
         </p>
 
-        <button className="mt-8 rounded-lg bg-white px-8 py-3 font-medium text-ts-primary">
+        <Button className="mt-8 rounded-lg bg-white px-8 py-3 font-medium text-ts-primary">
           Get Started
-        </button>
+        </Button>
       </div>
     </section>
   )

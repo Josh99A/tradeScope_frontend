@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '../ui/Button'
 
 const HomeHero = () => {
   return (
@@ -16,13 +17,13 @@ const HomeHero = () => {
           </p>
 
           <div className="mt-10 flex gap-4">
-            <button className="rounded-lg bg-ts-primary px-6 py-3 text-white font-medium">
+            <Button className="rounded-lg bg-ts-primary px-6 py-3 text-white font-medium">
               Start Paper Trading
-            </button>
+            </Button>
 
-            <button className="rounded-lg border border-ts-border px-6 py-3 text-ts-text-main">
+            <Button className="rounded-lg border border-ts-border px-6 py-3 text-ts-text-main">
               View Markets
-            </button>
+            </Button>
           </div>
         </div>
       </div>

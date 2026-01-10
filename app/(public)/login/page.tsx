@@ -7,6 +7,7 @@ import { loginUser } from "@/lib/auth";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import FormField from "@/components/auth/FormField";
+import { Button } from "@/components/ui/Button";
 
 const Page = () => {
   const [password, setPassword] = useState("");
@@ -68,7 +69,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
             className={cn(
@@ -79,7 +80,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
             )}
           >
             {loading ? "Signing in..." : "Sign In"}
-          </button>
+          </Button>
         </form>
 
         <p className="text-sm text-center text-ts-text-muted mt-6">

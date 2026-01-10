@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "../ui/ThemeToggle";
+import { Button } from "../ui/Button";
 
 
 type TopNavProps = {
@@ -36,13 +37,13 @@ export default function TopNav({ isAuthenticated, user }: TopNavProps) {
         </nav>
 
         {/* Mobile Menu Button */}
-        <button
+        <Button
           onClick={() => setOpen((v) => !v)}
           className="md:hidden p-2 rounded-md hover:bg-ts-hover active:bg-ts-active transition"
           aria-label="Toggle menu"
         >
           {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        </Button>
       </div>
 
       {/* Mobile Menu */}
@@ -109,7 +110,7 @@ function NavLinks({
           className={cn(
             "font-medium transition",
             mobile
-              ? "w-full text-center bg-ts-primary text-white py-2 rounded-md"
+              ? "w-full text-center bg-ts-primary text-white py-2 rounded-md block"
               : "bg-ts-primary text-white px-4 py-2 rounded-md hover:opacity-90"
           )}
         >
@@ -135,7 +136,7 @@ function NavLinks({
             onClick={onNavigate}
             className={cn(
               mobile
-                ? "w-full text-center bg-ts-primary text-white py-2 rounded-md"
+                ? "w-full text-center bg-ts-primary text-white py-2 rounded-md block"
                 : "bg-ts-primary text-white px-4 py-2 rounded-md hover:opacity-90"
             )}
           >

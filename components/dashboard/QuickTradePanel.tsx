@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/Button";
 
 export default function QuickTradePanel() {
   const [amount, setAmount] = useState("1000");
@@ -36,23 +37,23 @@ export default function QuickTradePanel() {
 
       {/* Buy / Sell */}
       <div className="grid grid-cols-2 gap-3">
-        <button
+        <Button
           className={cn(
             "rounded-lg py-3 font-semibold text-white transition",
             "bg-ts-success hover:opacity-90"
           )}
         >
           BUY
-        </button>
+        </Button>
 
-        <button
+        <Button
           className={cn(
             "rounded-lg py-3 font-semibold text-white transition",
             "bg-ts-danger hover:opacity-90"
           )}
         >
           SELL
-        </button>
+        </Button>
       </div>
     </section>
   );

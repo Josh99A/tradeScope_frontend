@@ -1,3 +1,4 @@
+import { Button } from "../ui/Button";
 const MarketSnapshot = () => {
   return (
     <div className="bg-ts-bg-card border border-ts-border rounded-xl p-5">
@@ -7,7 +8,7 @@ const MarketSnapshot = () => {
         {["BTC/USDT", "ETH/USDT", "SOL/USDT"].map((pair) => (
           <div key={pair} className="flex justify-between items-center">
             <span>{pair}</span>
-            <button className="text-ts-primary text-xs">Trade</button>
+            <Button className="text-ts-primary text-xs">Trade</Button>
           </div>
         ))}
       </div>

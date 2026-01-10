@@ -2,6 +2,7 @@
 
 import { Menu, Bell, Sun, Moon } from "lucide-react";
 import ThemeToggle from "../ui/ThemeToggle";
+import { Button } from "../ui/Button";
 
 const  DashboardTopBar = ({
   onMenuClick,
@@ -16,13 +17,13 @@ const  DashboardTopBar = ({
     
     {/* Left */}
     <div className="flex items-center gap-3">
-      <button
+      <Button
         className="md:hidden p-2 rounded-md hover:bg-ts-hover active:bg-ts-active transition"
         aria-label="Open menu"
       onClick={onMenuClick}
       >
         <Menu size={20} />
-      </button>
+      </Button>
 
       <h1 className="font-medium text-sm">Dashboard</h1>
     </div>
@@ -31,21 +32,21 @@ const  DashboardTopBar = ({
     <div className="flex items-center gap-2">
       <ThemeToggle/>
 
-      <button
+      <Button
         className="relative p-2 rounded-md hover:bg-ts-hover active:bg-ts-active transition"
         aria-label="Notifications"
       >
         <Bell size={18} />
         <span className="absolute top-1 right-1 h-2 w-2 bg-ts-danger rounded-full" />
-      </button>
+      </Button>
 
-      <button className="p-1 rounded-full hover:bg-ts-hover transition">
+      <Button className="p-1 rounded-full hover:bg-ts-hover transition">
         <img
           src="/Images/avatar-placeholder.jpg"
           className="w-8 h-8 rounded-full"
           alt="User avatar"
         />
-      </button>
+      </Button>
     </div>
   </div>
 </header>

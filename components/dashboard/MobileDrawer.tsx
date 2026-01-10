@@ -5,6 +5,7 @@ import Link from "next/link";
 import NavItem from "../navigation/NavItem";
 import { NAV_ITEMS } from "../navigation/nav.config";
 import ThemeToggle from "../ui/ThemeToggle";
+import { Button } from "../ui/Button";
 
 const links = [
   "Dashboard",
@@ -39,13 +40,13 @@ const MobileDrawer = ({
             Trade<span className="text-ts-primary">Scope</span>
             </Link>
 
-          <button
+          <Button
             onClick={onClose}
             className="p-2 rounded-md hover:bg-ts-hover transition"
             aria-label="Close menu"
           >
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         {/* Navigation */}
