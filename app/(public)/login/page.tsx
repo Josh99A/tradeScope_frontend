@@ -63,7 +63,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
           <FormField
             label="Password"
             type="password"
-            placeholder="••••••••"
+            placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
