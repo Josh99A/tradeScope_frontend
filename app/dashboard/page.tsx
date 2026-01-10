@@ -5,15 +5,18 @@ import MarketTable from '@/components/dashboard/MarketTable'
 import ChartPreview from '@/components/dashboard/ChartPreview'
 import QuickTradePanel from '@/components/dashboard/QuickTradePanel'
 import OpenPositions from '@/components/dashboard/OpenPositions'
+import MarketSnapshot from '@/components/dashboard/MarketSnapshot'
 
 const Dashboard = () => {
   return (
     <AppShell>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-  <div className="lg:col-span-2 space-y-4">
+      <div className="lg:col-span-2 space-y-4">
+        
     <ChartPreview />
     <OpenPositions />
-  </div>
+    <MarketSnapshot/>
+      </div>
 
   <div className="space-y-4">
     <QuickTradePanel />
