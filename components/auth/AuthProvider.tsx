@@ -5,9 +5,9 @@ import api from "@/lib/axios";
 
 type User = {
   id: number;
-  name: string;
+  username: string;
   email: string;
-  avatar?: string;
+  photo_url?: string;
 };
 
 type AuthContextType = {

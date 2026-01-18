@@ -16,27 +16,32 @@ const Page = () => {
   const router = useRouter();
 
 
-const { refreshUser } = useAuth();
+  const { refreshUser } = useAuth();
 
-const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-  try {
-    setLoading(true);
+    if (!email || !password) {
+      alert("Please enter your email and password");
+      return;
+    }
 
-    await loginUser(email, password);
+    try {
+      setLoading(true);
 
-    // 🔑 FORCE auth state sync
-    await refreshUser();
+      await loginUser(email, password);
 
-    router.replace("/dashboard");
+      // Sync auth state
+      await refreshUser();
 
-  } catch {
-    alert("Invalid email or password");
-  } finally {
-    setLoading(false);
-  }
-};
+      router.replace("/dashboard");
+
+    } catch {
+      alert("Invalid email or password");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   return (
@@ -84,7 +89,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         </form>
 
         <p className="text-sm text-center text-ts-text-muted mt-6">
-          Don’t have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/register" className="text-ts-primary hover:underline">
             Create one
           </Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -17,13 +17,27 @@ const Page = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [email, setEmail] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!profilePhoto) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(profilePhoto);
+    setPreviewUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [profilePhoto]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!username || !email || !password || !confirmPassword) {
-      alert("Please fill in all fields");
+    if (!email || !password || !confirmPassword) {
+      alert("Please fill in all required fields");
       return;
     }
 
@@ -35,19 +49,26 @@ const Page = () => {
     try {
       setLoading(true);
 
-      // 1️⃣ Register
-      await registerUser(email, username, password);
+      const trimmedUsername = username.trim();
 
-      // 2️⃣ Auto-login
+      // Register
+      await registerUser({
+        email,
+        username: trimmedUsername ? trimmedUsername : undefined,
+        password,
+        profilePhoto,
+      });
+
+      // Auto-login
       await loginUser(email, password);
 
-      // 3️⃣ Sync auth state
+      // Sync auth state
       await refreshUser();
 
-      // 4️⃣ Redirect
+      // Redirect
       router.replace("/dashboard");
 
-    } catch (err) {
+    } catch {
       alert("Registration failed. Please try again.");
     } finally {
       setLoading(false);
@@ -70,10 +91,31 @@ const Page = () => {
 
         {/* Form */}
         <form className="space-y-5" onSubmit={handleSubmit}>
+          <div>
+            <label className="block text-sm mb-1">Profile photo (optional)</label>
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full border border-ts-border overflow-hidden bg-ts-bg-main">
+                <img
+                  src={previewUrl || "/Images/avatar-placeholder.jpg"}
+                  alt="Profile preview"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => setProfilePhoto(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-ts-text-muted file:mr-4 file:rounded-md file:border-0 file:bg-ts-primary file:px-4 file:py-2 file:text-white hover:file:opacity-90"
+              />
+            </div>
+            <p className="mt-2 text-xs text-ts-text-muted">
+              PNG, JPG, or WEBP up to 2MB.
+            </p>
+          </div>
           <FormField
-            label="Username"
+            label="Username (optional)"
             type="text"
-            placeholder="Enter your username"
+            placeholder="Pick a username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />

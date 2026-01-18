@@ -34,3 +34,11 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Profile photo uploads (dev/MVP)
+
+- Upload: send a `multipart/form-data` request with `profile_photo` to `http://127.0.0.1:8000/api/users/user-info/` (PATCH or PUT) while authenticated.
+- Storage: files are saved under `backend/media/profiles/`.
+- Access from Next.js: the API returns an absolute `profile_photo` URL (e.g. `http://127.0.0.1:8000/media/profiles/avatar.jpg`), which can be used directly in `Image`.
+- CORS: set `CORS_ALLOWED_ORIGINS` to your Next.js origin (e.g. `http://localhost:3000`) so the frontend can fetch `/media/*`.
+- Next.js `Image`: add the backend host to `images.domains` or `images.remotePatterns` in `next.config.ts` if you render the photo with `<Image />`.

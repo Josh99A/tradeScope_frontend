@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  console.log("Login request body:", body);
 
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/users/login/`,
@@ -20,10 +21,20 @@ export async function POST(req: NextRequest) {
   const response = NextResponse.json(data, { status: res.status });
 
   // 🔑 Forward cookies from Django → Browser
-  const cookies = res.headers.get("set-cookie");
-  if (cookies) {
-    response.headers.set("set-cookie", cookies);
-  }
+  const headersWithCookies = res.headers as Headers & {
+    getSetCookie?: (this: Headers) => string[];
+  };
+  const getSetCookie = headersWithCookies.getSetCookie;
+  const cookies = getSetCookie
+    ? getSetCookie.call(res.headers)
+    : (() => {
+        const single = res.headers.get("set-cookie");
+        return single ? [single] : [];
+      })();
+
+  cookies.forEach((cookie) => {
+    response.headers.append("set-cookie", cookie);
+  });
 
   return response;
 }

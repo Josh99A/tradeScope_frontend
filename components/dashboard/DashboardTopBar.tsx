@@ -1,15 +1,18 @@
 "use client";
 
-import { Menu, Bell, Sun, Moon } from "lucide-react";
+import Link from "next/link";
+import { Menu, Bell } from "lucide-react";
 import ThemeToggle from "../ui/ThemeToggle";
 import { Button } from "../ui/Button";
 import LogoutButton from "../ui/LogoutButton";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const  DashboardTopBar = ({
   onMenuClick,
 }: {
   onMenuClick: () => void;
 }) => {
+  const { user } = useAuth();
   
 
   return (
@@ -31,6 +34,14 @@ const  DashboardTopBar = ({
 
     {/* Right */}
     <div className="flex items-center gap-2">
+      {user && (
+        <div className="hidden sm:flex flex-col items-end leading-tight">
+          <span className="text-xs text-ts-text-muted">Welcome back</span>
+          <span className="text-sm font-medium">
+            {user.username || user.email?.split("@")[0]}
+          </span>
+        </div>
+      )}
       
 
       <Button
@@ -42,13 +53,16 @@ const  DashboardTopBar = ({
       </Button>
       <LogoutButton/>
 
-      <Button className="p-1 rounded-full hover:bg-ts-hover transition">
+      <Link
+        href="/settings"
+        className="p-1 rounded-full hover:bg-ts-hover transition"
+      >
         <img
-          src="/Images/avatar-placeholder.jpg"
+          src={user?.photo_url || "/Images/avatar-placeholder.jpg"}
           className="w-8 h-8 rounded-full"
-          alt="User avatar"
+          alt={user?.username || "User avatar"}
         />
-      </Button>
+      </Link>
       <ThemeToggle/>
     </div>
   </div>

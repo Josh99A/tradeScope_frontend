@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,8 +12,8 @@ import LogoutButton from "../ui/LogoutButton";
 type TopNavProps = {
   isAuthenticated: boolean;
   user?: {
-    name: string;
-    avatarUrl?: string;
+    username: string;
+    photo_url?: string;
   };
 };
 
@@ -77,8 +76,8 @@ function NavLinks({
 }: {
   isAuthenticated: boolean;
   user?: {
-    name: string;
-    avatarUrl?: string;
+    username: string;
+    photo_url?: string;
   };
   mobile?: boolean;
   onNavigate?: () => void;
@@ -135,15 +134,14 @@ function NavLinks({
           <LogoutButton mobile={mobile} />
 
           <Link
-            href="/profile"
+            href="/settings"
             onClick={onNavigate}
             className="relative h-9 w-9 rounded-full overflow-hidden border border-ts-border hover:ring-2 hover:ring-ts-primary transition"
           >
-            <Image
-              src={user?.avatarUrl || "/Images/avatar-placeholder.jpg"}
-              alt={user?.name || "Profile"}
-              fill
-              className="object-cover"
+            <img
+              src={user?.photo_url || "/Images/avatar-placeholder.jpg"}
+              alt={user?.username || "Profile"}
+              className="h-full w-full object-cover"
             />
           </Link>
         </div>
