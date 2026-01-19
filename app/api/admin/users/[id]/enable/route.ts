@@ -1,19 +1,26 @@
 import { NextResponse } from "next/server";
 import { appendSetCookies } from "@/lib/forwardCookies";
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const resolvedParams = await params;
+  if (!resolvedParams.id || resolvedParams.id === "undefined") {
+    return NextResponse.json(
+      { detail: "Invalid user id." },
+      { status: 400 }
+    );
+  }
   const cookie = req.headers.get("cookie") || "";
-  const body = await req.json();
 
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/withdrawals/`,
+    `${process.env.BACKEND_URL}/api/admin/users/${resolvedParams.id}/enable/`,
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         Cookie: cookie,
       },
-      body: JSON.stringify(body),
     }
   );
 

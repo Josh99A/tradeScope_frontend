@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   const body = await req.json();
 
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/wallet/deposit/`,
+    `${process.env.BACKEND_URL}/api/deposits/`,
     {
       method: "POST",
       headers: {

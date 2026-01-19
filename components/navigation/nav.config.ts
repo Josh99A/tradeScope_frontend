@@ -7,6 +7,7 @@ import {
   History,
   Wallet,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 
 export const NAV_ITEMS = [
@@ -25,6 +26,7 @@ export const NAV_ITEMS = [
     items: [
       { label: "Wallet", href: "/wallet", icon: Wallet },
       { label: "Settings", href: "/settings", icon: Settings },
+      { label: "Admin", href: "/admin", icon: ShieldCheck },
     ],
   },
 ];

@@ -3,38 +3,70 @@
 import { useEffect, useState } from "react";
 import AppShell from "@/components/layout/AppShell";
 import DashboardShell from "@/components/layout/DashboardShell";
-import ActivityTable from "@/components/wallet/ActivityTable";
-import { getWalletActivity } from "@/lib/wallet";
+import ActivityLogTable from "@/components/activity/ActivityLogTable";
+import StatusTable from "@/components/wallet/StatusTable";
+import { getDeposits, getWithdrawals } from "@/lib/wallet";
+import { getActivity } from "@/lib/activity";
 
-type ActivityItem = {
+type ActivityLogItem = {
   id?: number | string;
-  type?: string;
+  action?: string;
+  metadata?: Record<string, unknown> | null;
+  created_at?: string;
+};
+
+type StatusItem = {
+  id?: number | string;
   amount?: number | string;
   status?: string;
   created_at?: string;
-  description?: string;
-  reference?: string;
 };
 
-const normalizeActivity = (data: unknown): ActivityItem[] => {
-  if (Array.isArray(data)) return data as ActivityItem[];
+const normalizeActivity = (data: unknown): ActivityLogItem[] => {
+  if (Array.isArray(data)) return data as ActivityLogItem[];
   if (data && typeof data === "object") {
-    const maybe = data as { results?: ActivityItem[]; items?: ActivityItem[] };
+    const maybe = data as {
+      results?: ActivityLogItem[];
+      items?: ActivityLogItem[];
+    };
+    return maybe.results || maybe.items || [];
+  }
+  return [];
+};
+
+const normalizeStatus = (data: unknown): StatusItem[] => {
+  if (Array.isArray(data)) return data as StatusItem[];
+  if (data && typeof data === "object") {
+    const maybe = data as { results?: StatusItem[]; items?: StatusItem[] };
     return maybe.results || maybe.items || [];
   }
   return [];
 };
 
 export default function HistoryPage() {
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [activity, setActivity] = useState<ActivityLogItem[]>([]);
+  const [deposits, setDeposits] = useState<StatusItem[]>([]);
+  const [withdrawals, setWithdrawals] = useState<StatusItem[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const pendingWithdrawal = withdrawals.some((withdrawal) => {
+    const status = String(withdrawal.status).toUpperCase();
+    return status === "PENDING_REVIEW" || status === "PROCESSING";
+  });
 
   useEffect(() => {
     const loadActivity = async () => {
       setNotice(null);
       try {
-        const data = await getWalletActivity();
+        const [activityData, depositsData, withdrawalsData] =
+          await Promise.all([
+            getActivity(),
+            getDeposits(),
+            getWithdrawals(),
+          ]);
+        const data = activityData;
         setActivity(normalizeActivity(data));
+        setDeposits(normalizeStatus(depositsData));
+        setWithdrawals(normalizeStatus(withdrawalsData));
       } catch (_e) {
         setNotice("Unable to load activity history.");
       }
@@ -52,7 +84,7 @@ export default function HistoryPage() {
               History
             </h1>
             <p className="text-sm text-ts-text-muted">
-              Review your recent wallet activity.
+              Review your recent account activity.
             </p>
           </div>
 
@@ -62,7 +94,30 @@ export default function HistoryPage() {
             </div>
           )}
 
-          <ActivityTable items={activity} title="Activity history" />
+          <ActivityLogTable
+            items={activity}
+            title="Activity history"
+            emptyLabel="No activity recorded."
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <StatusTable
+              title="Deposit history"
+              items={deposits}
+              emptyLabel="No deposits recorded."
+            />
+            <StatusTable
+              title="Withdrawal history"
+              items={withdrawals}
+              emptyLabel="No withdrawals recorded."
+            />
+          </div>
+          {pendingWithdrawal && (
+            <div className="rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-sm text-ts-text-main">
+              Your withdrawal request is pending and will be processed
+              within 24 hours.
+            </div>
+          )}
         </div>
       </AppShell>
     </DashboardShell>

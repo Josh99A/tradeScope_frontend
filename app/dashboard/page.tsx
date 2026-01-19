@@ -7,6 +7,7 @@ import QuickTradePanel from '@/components/dashboard/QuickTradePanel'
 import OpenPositions from '@/components/dashboard/OpenPositions'
 import MarketSnapshot from '@/components/dashboard/MarketSnapshot'
 import WelcomePanel from '@/components/dashboard/WelcomePanel'
+import RecentActivity from '@/components/dashboard/RecentActivity'
 
 const Dashboard = () => {
   return (
@@ -16,6 +17,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 space-y-4">
             <ChartPreview />
+            <RecentActivity />
             <OpenPositions />
             <MarketSnapshot />
           </div>

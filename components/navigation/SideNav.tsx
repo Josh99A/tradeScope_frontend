@@ -5,8 +5,22 @@ import NavItem from "./NavItem";
 import { NAV_ITEMS } from "./nav.config";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import Link from "next/link";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function SideNav() {
+  const { user } = useAuth();
+  const isAdmin = !!(user?.is_staff || user?.is_superuser);
+
+  const navItems = NAV_ITEMS.map((group) => {
+    const items = group.items.filter((item) => {
+      if (item.href === "/admin") {
+        return isAdmin;
+      }
+      return true;
+    });
+    return { ...group, items };
+  }).filter((group) => group.items.length > 0);
+
   return (
     <aside className="hidden md:flex w-64 flex-col border-r border-ts-border bg-ts-bg-card">
       
@@ -17,7 +31,7 @@ export default function SideNav() {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-6">
-        {NAV_ITEMS.map((group) => (
+        {navItems.map((group) => (
           <div key={group.section}>
             <p className="px-3 mb-2 text-xs uppercase text-ts-text-muted">
               {group.section}
