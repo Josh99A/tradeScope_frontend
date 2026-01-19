@@ -3,8 +3,9 @@ import { appendSetCookies } from "@/lib/forwardCookies";
 
 export async function GET(req: Request) {
   const cookie = req.headers.get("cookie") || "";
+  const { search } = new URL(req.url);
 
-  const res = await fetch(`${process.env.BACKEND_URL}/api/activity/`, {
+  const res = await fetch(`${process.env.BACKEND_URL}/api/activity/${search}`, {
     headers: {
       Cookie: cookie,
     },

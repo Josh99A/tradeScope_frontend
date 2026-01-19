@@ -13,6 +13,8 @@ type ActivityLogItem = {
   action?: string;
   metadata?: Record<string, unknown> | null;
   created_at?: string;
+  archived?: boolean;
+  deleted?: boolean;
 };
 
 type StatusItem = {
@@ -48,30 +50,30 @@ export default function HistoryPage() {
   const [deposits, setDeposits] = useState<StatusItem[]>([]);
   const [withdrawals, setWithdrawals] = useState<StatusItem[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [activityTab, setActivityTab] = useState<"all" | "archived">("all");
   const pendingWithdrawal = withdrawals.some((withdrawal) => {
     const status = String(withdrawal.status).toUpperCase();
     return status === "PENDING_REVIEW" || status === "PROCESSING";
   });
 
-  useEffect(() => {
-    const loadActivity = async () => {
-      setNotice(null);
-      try {
-        const [activityData, depositsData, withdrawalsData] =
-          await Promise.all([
-            getActivity(),
-            getDeposits(),
-            getWithdrawals(),
-          ]);
-        const data = activityData;
-        setActivity(normalizeActivity(data));
-        setDeposits(normalizeStatus(depositsData));
-        setWithdrawals(normalizeStatus(withdrawalsData));
-      } catch (_e) {
-        setNotice("Unable to load activity history.");
-      }
-    };
+  const loadActivity = async () => {
+    setNotice(null);
+    try {
+      const [activityData, depositsData, withdrawalsData] =
+        await Promise.all([
+          getActivity({ includeArchived: true }),
+          getDeposits(),
+          getWithdrawals(),
+        ]);
+      setActivity(normalizeActivity(activityData));
+      setDeposits(normalizeStatus(depositsData));
+      setWithdrawals(normalizeStatus(withdrawalsData));
+    } catch (_e) {
+      setNotice("Unable to load activity history.");
+    }
+  };
 
+  useEffect(() => {
     loadActivity();
   }, []);
 
@@ -94,10 +96,43 @@ export default function HistoryPage() {
             </div>
           )}
 
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: "all", label: "All activity" },
+              { id: "archived", label: "Archived" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() =>
+                  setActivityTab(tab.id as "all" | "archived")
+                }
+                className={`rounded-full border px-4 py-2 text-sm transition ${
+                  activityTab === tab.id
+                    ? "border-ts-primary bg-ts-primary/10 text-ts-text-main"
+                    : "border-ts-border bg-ts-bg-card text-ts-text-muted hover:border-ts-primary/40"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
           <ActivityLogTable
-            items={activity}
+            items={
+              activityTab === "archived"
+                ? activity.filter((item) => item.archived)
+                : activity
+            }
             title="Activity history"
-            emptyLabel="No activity recorded."
+            emptyLabel={
+              activityTab === "archived"
+                ? "No archived activity recorded."
+                : "No activity recorded."
+            }
+            showArchivedByDefault={activityTab === "archived"}
+            hideArchiveToggle={activityTab === "archived"}
+            onRefresh={loadActivity}
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

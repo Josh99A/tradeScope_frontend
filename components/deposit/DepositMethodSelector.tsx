@@ -29,7 +29,7 @@ export default function DepositMethodSelector({
             key={asset.code}
             type="button"
             onClick={() => onChange(asset.code)}
-            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
+            className={`flex min-w-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs transition sm:text-sm ${
               isActive
                 ? "border-ts-primary bg-ts-primary/10 text-ts-text-main"
                 : "border-ts-border bg-ts-bg-main text-ts-text-muted hover:border-ts-primary/50"
@@ -45,7 +45,7 @@ export default function DepositMethodSelector({
             >
               {asset.code}
             </span>
-            <span className="font-medium">{asset.label}</span>
+            <span className="min-w-0 font-medium leading-tight">{asset.label}</span>
           </button>
         );
       })}

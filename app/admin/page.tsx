@@ -55,6 +55,8 @@ type AdminActivityItem = {
   action?: string;
   metadata?: Record<string, unknown> | null;
   created_at?: string;
+  archived?: boolean;
+  deleted?: boolean;
   user?: {
     id?: number | string;
     email?: string;
@@ -102,7 +104,7 @@ export default function AdminDashboardPage() {
         getAdminDeposits(),
         getAdminWithdrawals(),
         getAdminUsers(),
-        getAdminActivity(),
+        getAdminActivity({ includeArchived: true }),
       ]);
       setDeposits(normalizeList<AdminItem>(depositData));
       setWithdrawals(normalizeList<AdminItem>(withdrawalData));
@@ -237,6 +239,8 @@ export default function AdminDashboardPage() {
               emptyLabel={
                 loading ? "Loading activity..." : "No activity found."
               }
+              scope="admin"
+              onRefresh={loadAdminData}
             />
           )}
         </div>

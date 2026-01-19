@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import LiveMarketGrid from "@/components/market/LiveMarketGrid";
+import LiveMarketHero from "@/components/market/LiveMarketHero";
+import LiveTickerTable from "@/components/market/LiveTickerTable";
 
 const HomePage = () => {
   return (
@@ -42,11 +45,7 @@ const HomePage = () => {
           </div>
         </div>
 
-        <div className="relative h-72 lg:h-96 rounded-xl bg-ts-bg-card border border-ts-border flex items-center justify-center">
-          <span className="text-ts-text-muted text-sm">
-            📈 Live Crypto Charts Preview
-          </span>
-        </div>
+        <LiveMarketHero />
       </section>
 
       {/* ================= MARKET HIGHLIGHTS ================= */}
@@ -54,11 +53,15 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 py-16">
           <h2 className="text-2xl font-semibold mb-8">Market Highlights</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <MarketCard pair="BTC / USDT" price="$42,180" change="+2.4%" />
-            <MarketCard pair="ETH / USDT" price="$2,320" change="-1.1%" />
-            <MarketCard pair="SOL / USDT" price="$98.40" change="+4.7%" />
-          </div>
+          <LiveMarketGrid limit={3} />
+        </div>
+      </section>
+
+      {/* ================= MARKET TICKERS ================= */}
+      <section className="border-t border-ts-border">
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <h2 className="text-2xl font-semibold mb-8">Market Tickers</h2>
+          <LiveTickerTable limit={6} />
         </div>
       </section>
 
@@ -129,36 +132,9 @@ const HomePage = () => {
       </section>
     </main>
   );
-}
+};
 
 /* ================= SUB COMPONENTS ================= */
-
-function MarketCard({
-  pair,
-  price,
-  change,
-}: {
-  pair: string;
-  price: string;
-  change: string;
-}) {
-  const isPositive = change.startsWith("+");
-
-  return (
-    <div className="bg-ts-bg-card border border-ts-border rounded-xl p-6 hover:border-ts-primary transition">
-      <p className="text-sm text-ts-text-muted">{pair}</p>
-      <p className="text-xl font-semibold mt-2">{price}</p>
-      <p
-        className={cn(
-          "text-sm mt-1",
-          isPositive ? "text-ts-success" : "text-ts-danger"
-        )}
-      >
-        {change}
-      </p>
-    </div>
-  );
-}
 
 function StepCard({
   step,

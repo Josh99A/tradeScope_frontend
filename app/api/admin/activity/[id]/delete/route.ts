@@ -3,18 +3,20 @@ import { appendSetCookies } from "@/lib/forwardCookies";
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id?: string }> }
 ) {
+  const cookie = req.headers.get("cookie") || "";
   const resolvedParams = await params;
-  if (!resolvedParams.id || resolvedParams.id === "undefined") {
+  const trimmed = String(resolvedParams?.id || "").trim().toLowerCase();
+  if (!trimmed || trimmed === "undefined" || trimmed === "null") {
     return NextResponse.json(
-      { detail: "Invalid user id." },
+      { detail: "Invalid activity id." },
       { status: 400 }
     );
   }
-  const cookie = req.headers.get("cookie") || "";
+
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/admin/users/${resolvedParams.id}/disable/`,
+    `${process.env.BACKEND_URL}/api/admin/activity/${resolvedParams.id}/delete/`,
     {
       method: "POST",
       headers: {

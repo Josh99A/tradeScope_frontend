@@ -1,9 +1,11 @@
 "use client";
 
-import { Maximize2, Minimize2, Search } from "lucide-react";
+import { Maximize2, Minimize2, Search, ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 
 declare global {
   interface Window {
@@ -12,21 +14,65 @@ declare global {
 }
 
 const POPULAR_CRYPTOS = [
-  { symbol: "BTCUSD", name: "Bitcoin" },
-  { symbol: "ETHUSD", name: "Ethereum" },
-  { symbol: "BNBUSD", name: "BNB" },
-  { symbol: "SOLUSD", name: "Solana" },
-  { symbol: "ADAUSD", name: "Cardano" },
+  { symbol: "BTCUSDT", name: "Bitcoin" },
+  { symbol: "ETHUSDT", name: "Ethereum" },
+  { symbol: "BNBUSDT", name: "BNB" },
+  { symbol: "SOLUSDT", name: "Solana" },
+  { symbol: "ADAUSDT", name: "Cardano" },
 ];
+
+const normalizeSymbol = (value: string, quote: string) => {
+  const trimmed = value.trim().toUpperCase();
+  if (!trimmed) return "BINANCE:BTCUSDT";
+  if (trimmed.includes(":")) return trimmed;
+  const base = trimmed.replace(/[^A-Z0-9]/g, "");
+  const quoteSuffix = quote.toUpperCase();
+  const withQuote = /(USDT|USDC|USD)$/.test(base)
+    ? base
+    : `${base}${quoteSuffix}`;
+  return `BINANCE:${withQuote}`;
+};
+
+const parseSearchInput = (
+  value: string,
+  fallbackQuote: "USDT" | "USDC" | "USD"
+): { symbol: string; quote: "USDT" | "USDC" | "USD" } | null => {
+  const cleaned = value.trim().toUpperCase();
+  if (!cleaned) return null;
+  const directMatch = cleaned.match(/^([A-Z0-9]+)[\/_-]?([A-Z]{3,4})?$/);
+  if (!directMatch) {
+    return { symbol: cleaned, quote: fallbackQuote };
+  }
+  const base = directMatch[1];
+  let quoteVal: "USDT" | "USDC" | "USD" = fallbackQuote;
+  if (directMatch[2]) {
+    const up = directMatch[2].toUpperCase();
+    if (up === "USDT" || up === "USDC" || up === "USD") {
+      quoteVal = up;
+    }
+  }
+  return { symbol: `${base}${quoteVal}`, quote: quoteVal };
+};
+
+const getBaseSymbol = (value: string) => {
+  return value
+    .replace("BINANCE:", "")
+    .replace(/(USDT|USDC|USD)$/i, "")
+    .replace(/[^A-Z0-9]/g, "")
+    .toUpperCase();
+};
 
 type TradeSide = "buy" | "sell";
 
 export default function TradeChart() {
-  const [currentSymbol, setCurrentSymbol] = useState("BTCUSD");
+  const [quote, setQuote] = useState<"USDT" | "USDC" | "USD">("USDT");
+  const [baseSymbol, setBaseSymbol] = useState("BTC");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const { theme } = useTheme();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Trade state
   const [side, setSide] = useState<TradeSide>("buy");
@@ -35,6 +81,9 @@ export default function TradeChart() {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const widgetRef = useRef<any>(null);
+  const currentSymbol = normalizeSymbol(baseSymbol, quote);
+  const chartKey = `${baseSymbol}-${quote}`;
+  const chartContainerId = `tradescope-chart-${chartKey}`;
 
   /* ================= LOAD TRADINGVIEW ================= */
 
@@ -52,55 +101,75 @@ export default function TradeChart() {
   }, []);
 
   useEffect(() => {
+    const symbolParam = searchParams.get("symbol");
+    const quoteParam = searchParams.get("quote");
+    if (quoteParam === "USDC" || quoteParam === "USD" || quoteParam === "USDT") {
+      setQuote(quoteParam);
+    }
+    if (!symbolParam) return;
+    setBaseSymbol(getBaseSymbol(symbolParam));
+  }, [searchParams, quote]);
+
+  useEffect(() => {
     if (!isScriptLoaded || !chartContainerRef.current) return;
 
-
-  // ✅ Destroy previous widget safely
-  if (widgetRef.current) {
-    try {
-      widgetRef.current.remove();
-    } catch {
-      // TradingView sometimes throws internally – ignore safely
-    }
-    widgetRef.current = null;
-  }
-
-  widgetRef.current = new window.TradingView.widget({
-    autosize: true,
-    symbol: currentSymbol,
-    container_id: chartContainerRef.current.id,
-    interval: "15",
-    timezone: "Etc/UTC",
-    theme: theme === "dark" ? "dark" : "light",
-    style: "1",
-    locale: "en",
-    enable_publishing: false,
-    hide_top_toolbar: false,
-    hide_legend: false,
-    save_image: false,
-  });
-
-  return () => {
+    // Destroy previous widget safely
     if (widgetRef.current) {
       try {
         widgetRef.current.remove();
-      } catch {}
+      } catch {
+        // TradingView sometimes throws internally, ignore safely
+      }
       widgetRef.current = null;
     }
-  };
-}, [isScriptLoaded, currentSymbol, theme]);
+
+    chartContainerRef.current.innerHTML = "";
+
+    widgetRef.current = new window.TradingView.widget({
+      autosize: true,
+      symbol: currentSymbol,
+      container_id: chartContainerId,
+      interval: "15",
+      timezone: "Etc/UTC",
+      theme: theme === "dark" ? "dark" : "light",
+      style: "1",
+      locale: "en",
+      enable_publishing: false,
+      hide_top_toolbar: false,
+      hide_legend: false,
+      save_image: false,
+    });
+
+    return () => {
+      if (widgetRef.current) {
+        try {
+          widgetRef.current.remove();
+        } catch {}
+        widgetRef.current = null;
+      }
+    };
+  }, [isScriptLoaded, currentSymbol, theme, chartContainerId]);
 
   /* ================= HANDLERS ================= */
+
+  const applySymbol = (symbol: string, nextQuote = quote) => {
+    const base = getBaseSymbol(symbol);
+    setBaseSymbol(base);
+    const normalized = normalizeSymbol(base, nextQuote);
+    const nextUrl = `/dashboard/trade?symbol=${normalized.replace("BINANCE:", "")}&quote=${nextQuote}`;
+    router.replace(nextUrl);
+    window.location.assign(nextUrl);
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchTerm.trim()) return;
-
-    const symbol = searchTerm.toUpperCase().endsWith("USD")
-      ? searchTerm.toUpperCase()
-      : `${searchTerm.toUpperCase()}USD`;
-
-    setCurrentSymbol(symbol);
+    const parsed = parseSearchInput(searchTerm, quote);
+    if (!parsed) return;
+    if (parsed.quote === "USDT" || parsed.quote === "USDC" || parsed.quote === "USD") {
+      setQuote(parsed.quote as "USDT" | "USDC" | "USD");
+    }
+    applySymbol(parsed.symbol, parsed.quote);
     setSearchTerm("");
   };
 
@@ -113,7 +182,7 @@ export default function TradeChart() {
       amount: Number(amount),
     };
 
-    // 🔗 Will be sent to Django later
+    // Will be sent to Django later
     console.log("TRADE PAYLOAD:", payload);
 
     alert(`${side.toUpperCase()} order placed (demo)`);
@@ -132,20 +201,48 @@ export default function TradeChart() {
       {/* HEADER */}
       <div className="px-4 py-3 border-b border-ts-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-semibold text-sm">{currentSymbol}</h2>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1 text-xs text-ts-text-muted hover:text-ts-text-main"
+            >
+              <ArrowLeft size={14} />
+              Dashboard
+            </Link>
+            <h2 className="font-semibold text-sm">
+              {currentSymbol.replace("BINANCE:", "")}
+            </h2>
+          </div>
           <p className="text-xs text-ts-text-muted">
             Crypto Market
           </p>
         </div>
 
-        <div className="flex gap-2 items-center">
-          <form onSubmit={handleSearchSubmit} className="relative">
+        <div className="flex w-full flex-wrap gap-2 items-center sm:w-auto sm:flex-nowrap">
+          <div className="grid w-full grid-cols-3 items-center gap-1 rounded-md border border-ts-border bg-ts-bg-main p-1 sm:flex sm:w-auto">
+            {(["USDT", "USDC", "USD"] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setQuote(item)}
+                className={cn(
+                  "px-2 py-1 text-xs rounded-md transition",
+                  quote === item
+                    ? "bg-ts-primary text-white"
+                    : "text-ts-text-muted hover:text-ts-text-main"
+                )}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[160px] sm:flex-none">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ts-text-muted" />
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="BTC, ETH..."
-              className="pl-8 pr-3 py-2 text-sm rounded-md bg-ts-input-bg border border-ts-input-border focus:outline-none"
+              className="w-full pl-8 pr-3 py-2 text-sm rounded-md bg-ts-input-bg border border-ts-input-border focus:outline-none"
             />
           </form>
 
@@ -163,30 +260,39 @@ export default function TradeChart() {
         {POPULAR_CRYPTOS.map((c) => (
           <button
             key={c.symbol}
-            onClick={() => setCurrentSymbol(c.symbol)}
+            onClick={() => applySymbol(getBaseSymbol(c.symbol), quote)}
             className={cn(
               "px-3 py-1 rounded-full text-xs transition",
-              currentSymbol === c.symbol
+              getBaseSymbol(currentSymbol) === getBaseSymbol(c.symbol)
                 ? "bg-ts-primary text-white"
                 : "bg-ts-hover text-ts-text-main hover:bg-ts-active"
             )}
           >
-            {c.name}
+            {normalizeSymbol(getBaseSymbol(c.symbol), quote).replace(
+              "BINANCE:",
+              ""
+            )}
           </button>
         ))}
       </div>
 
       {/* CHART */}
-      <div className={cn(isFullscreen ? "h-[70vh]" : "h-[420px]")}>
+      <div
+        className={cn(
+          isFullscreen ? "h-[70vh] sm:h-[75vh]" : "h-[320px] sm:h-[420px]"
+        )}
+      >
         <div
+          key={chartKey}
           ref={chartContainerRef}
-          id="tradescope-chart"
+          id={chartContainerId}
           className="w-full h-full"
         />
       </div>
 
       {/* TRADE PANEL */}
-      <div className="border-t border-ts-border px-4 py-4 space-y-4">
+      <div className="border-t border-ts-border px-4 py-4">
+        <div className="grid gap-4 sm:grid-cols-2">
         {/* Buy / Sell */}
         <div className="grid grid-cols-2 gap-2">
           <button
@@ -231,7 +337,7 @@ export default function TradeChart() {
         <button
           onClick={handleTradeSubmit}
           className={cn(
-            "w-full py-3 rounded-lg text-white font-medium transition",
+            "w-full py-3 rounded-lg text-white font-medium transition sm:col-span-2",
             side === "buy"
               ? "bg-ts-success hover:opacity-90"
               : "bg-ts-danger hover:opacity-90"
@@ -239,6 +345,7 @@ export default function TradeChart() {
         >
           Place {side.toUpperCase()} Order
         </button>
+        </div>
       </div>
     </div>
   );

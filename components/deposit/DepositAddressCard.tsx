@@ -33,7 +33,7 @@ export default function DepositAddressCard({
         <Button
           type="button"
           onClick={handleCopy}
-          className="bg-ts-primary text-white hover:opacity-90"
+          className="w-full bg-ts-primary text-white hover:opacity-90 sm:w-auto"
         >
           {copied ? "Copied" : "Copy"}
         </Button>

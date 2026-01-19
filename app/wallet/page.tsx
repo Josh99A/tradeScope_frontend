@@ -22,6 +22,7 @@ type WalletData = {
   total_balance?: number | string;
   available_balance?: number | string;
   available?: number | string;
+  locked_balance?: number | string;
   pending_withdrawals?: number | string;
   pending?: number | string;
   currency?: string;
@@ -35,6 +36,8 @@ type ActivityItem = {
   created_at?: string;
   description?: string;
   reference?: string;
+  archived?: boolean;
+  deleted?: boolean;
 };
 
 const parseNumber = (value: number | string | undefined) => {
@@ -89,7 +92,7 @@ export default function WalletPage() {
       const [walletData, activityData, depositsData, withdrawalsData] =
         await Promise.all([
         getWallet(),
-        getWalletActivity(),
+        getWalletActivity({ includeArchived: true }),
         getDeposits(),
         getWithdrawals(),
       ]);
@@ -278,6 +281,7 @@ export default function WalletPage() {
           <ActivityTable
             items={activity}
             title="Wallet activity"
+            onRefresh={fetchWalletData}
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

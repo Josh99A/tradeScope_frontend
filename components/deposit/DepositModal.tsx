@@ -94,7 +94,7 @@ export default function DepositModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-3 sm:items-center sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="deposit-title"
@@ -107,7 +107,7 @@ export default function DepositModal({
       />
       <div
         ref={containerRef}
-        className="relative w-full max-w-2xl rounded-t-2xl border border-ts-border bg-ts-bg-card p-5 shadow-xl sm:rounded-2xl sm:p-6"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-2xl border border-ts-border bg-ts-bg-card p-5 shadow-xl sm:max-h-[85vh] sm:rounded-2xl sm:p-6"
       >
         <div className="flex items-center justify-between">
           <h2 id="deposit-title" className="text-lg font-semibold">

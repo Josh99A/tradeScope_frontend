@@ -9,6 +9,8 @@ type ActivityLogItem = {
   action?: string;
   metadata?: Record<string, unknown> | null;
   created_at?: string;
+  archived?: boolean;
+  deleted?: boolean;
 };
 
 const normalizeList = (data: unknown): ActivityLogItem[] => {
@@ -23,20 +25,21 @@ const normalizeList = (data: unknown): ActivityLogItem[] => {
 export default function RecentActivity() {
   const [items, setItems] = useState<ActivityLogItem[]>([]);
 
+  const load = async () => {
+    try {
+      const data = await getActivity({ includeArchived: true });
+      const list = normalizeList(data).sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return timeB - timeA;
+      });
+      setItems(list.slice(0, 5));
+    } catch {
+      setItems([]);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await getActivity();
-        const list = normalizeList(data).sort((a, b) => {
-          const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return timeB - timeA;
-        });
-        setItems(list.slice(0, 5));
-      } catch {
-        setItems([]);
-      }
-    };
     load();
   }, []);
 
@@ -45,6 +48,7 @@ export default function RecentActivity() {
       items={items}
       title="Recent activity"
       emptyLabel="No recent activity."
+      onRefresh={load}
     />
   );
 }

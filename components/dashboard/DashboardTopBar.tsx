@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, Bell } from "lucide-react";
+import { Menu } from "lucide-react";
 import ThemeToggle from "../ui/ThemeToggle";
 import { Button } from "../ui/Button";
 import LogoutButton from "../ui/LogoutButton";
 import { useAuth } from "@/components/auth/AuthProvider";
+import NotificationsMenu from "@/components/notifications/NotificationsMenu";
 
 const  DashboardTopBar = ({
   onMenuClick,
@@ -13,6 +14,7 @@ const  DashboardTopBar = ({
   onMenuClick: () => void;
 }) => {
   const { user } = useAuth();
+  const isAdmin = !!(user?.is_staff || user?.is_superuser);
   
 
   return (
@@ -29,11 +31,22 @@ const  DashboardTopBar = ({
         <Menu size={20} />
       </Button>
 
-      <h1 className="font-medium text-sm">Dashboard</h1>
+      <Link
+        href="/dashboard"
+        className="font-medium text-sm hover:text-ts-primary transition"
+      >
+        Dashboard
+      </Link>
     </div>
 
     {/* Right */}
     <div className="flex items-center gap-2">
+      <Link
+        href="/wallet"
+        className="inline-flex items-center rounded-md border border-ts-primary bg-ts-primary/10 px-3 py-1 text-xs font-semibold text-ts-text-main hover:bg-ts-primary/20 transition"
+      >
+        Wallet
+      </Link>
       {user && (
         <div className="hidden sm:flex flex-col items-end leading-tight">
           <span className="text-xs text-ts-text-muted">Welcome back</span>
@@ -44,13 +57,7 @@ const  DashboardTopBar = ({
       )}
       
 
-      <Button
-        className="relative p-2 rounded-md hover:bg-ts-hover active:bg-ts-active transition"
-        aria-label="Notifications"
-      >
-        <Bell size={18} />
-        <span className="absolute top-1 right-1 h-2 w-2 bg-ts-danger rounded-full" />
-      </Button>
+      <NotificationsMenu isAdmin={isAdmin} />
       <LogoutButton/>
 
       <Link

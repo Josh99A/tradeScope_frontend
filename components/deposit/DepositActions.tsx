@@ -19,7 +19,7 @@ export default function DepositActions({
       <Button
         type="button"
         onClick={onCancel}
-        className="bg-ts-hover text-ts-text-main hover:bg-ts-active"
+        className="w-full bg-ts-hover text-ts-text-main hover:bg-ts-active sm:w-auto"
       >
         Cancel
       </Button>
@@ -27,7 +27,7 @@ export default function DepositActions({
         type="button"
         onClick={onConfirm}
         disabled={!canConfirm || loading}
-        className="bg-ts-primary text-white hover:opacity-90"
+        className="w-full bg-ts-primary text-white hover:opacity-90 sm:w-auto"
       >
         {loading ? "Processing..." : "Confirm Deposit"}
       </Button>
