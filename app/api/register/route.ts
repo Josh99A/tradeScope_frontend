@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       headers["Content-Type"] = "application/json";
       
     }
-    console.log("Register request body:", body);
+    
     const res = await fetch(
       `${process.env.BACKEND_URL}/api/users/register/`,
       {

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import FormField from "@/components/auth/FormField";
 import { Button } from "@/components/ui/Button";
+import toast from "react-hot-toast";
 
 const Page = () => {
   const [password, setPassword] = useState("");
@@ -22,7 +23,7 @@ const Page = () => {
     e.preventDefault();
 
     if (!email || !password) {
-      alert("Please enter your email and password");
+      toast.error("Please enter your email and password.");
       return;
     }
 
@@ -34,10 +35,15 @@ const Page = () => {
       // Sync auth state
       await refreshUser();
 
+      toast.success("Welcome back! You're now signed in.");
       router.replace("/dashboard");
 
-    } catch {
-      alert("Invalid email or password");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Invalid email or password.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

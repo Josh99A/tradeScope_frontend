@@ -96,10 +96,6 @@ function NavLinks({
         <Link href="/markets" onClick={onNavigate} className={linkClass}>
           Markets
         </Link>
-
-        <Link href="/pricing" onClick={onNavigate} className={linkClass}>
-          Pricing
-        </Link>
       </div>
 
       {/* Auth Section */}

@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  console.log("Login request body:", body);
+ 
 
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/users/login/`,

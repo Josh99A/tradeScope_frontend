@@ -8,6 +8,7 @@ import FormField from "@/components/auth/FormField";
 import { registerUser, loginUser } from "@/lib/auth";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
+import toast from "react-hot-toast";
 
 const getPasswordScore = (value: string) => {
   const checks = [
@@ -66,12 +67,12 @@ const Page = () => {
     e.preventDefault();
 
     if (!email || !password || !confirmPassword) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields.");
       return;
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      toast.error("Passwords do not match.");
       return;
     }
 
@@ -95,10 +96,15 @@ const Page = () => {
       await refreshUser();
 
       // Redirect
+      toast.success("Account created successfully. Welcome to TradeScope!");
       router.replace("/dashboard");
 
-    } catch {
-      alert("Registration failed. Please try again.");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Registration failed. Please try again.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
