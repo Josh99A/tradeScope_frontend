@@ -78,6 +78,7 @@ const Page = () => {
             placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            allowToggle
           />
 
           <Button

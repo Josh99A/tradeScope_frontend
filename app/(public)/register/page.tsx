@@ -169,6 +169,7 @@ const Page = () => {
             placeholder="At least 8 chars, upper/lower/number/symbol"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            allowToggle
           />
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
@@ -193,6 +194,7 @@ const Page = () => {
             placeholder="Re-enter password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
+            allowToggle
           />
 
           <Button
