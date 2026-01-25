@@ -13,11 +13,11 @@ export default function DepositAmountInput({
 }) {
   return (
     <div>
-      <label className="text-xs text-ts-text-muted">Amount</label>
+      <label className="text-xs text-ts-text-muted">Amount (Asset)</label>
       <input
         type="number"
         min="0"
-        step="0.01"
+        step="0.00000001"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder="Enter amount"

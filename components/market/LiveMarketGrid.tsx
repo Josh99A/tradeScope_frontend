@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getMarkets } from "@/lib/markets";
+import AssetIcon from "@/components/ui/AssetIcon";
 
 type MarketItem = {
   id: string;
@@ -49,15 +50,10 @@ export default function LiveMarketGrid({ limit = 3 }: { limit?: number }) {
             className="bg-ts-bg-card border border-ts-border rounded-xl p-6 hover:border-ts-primary transition"
           >
             <div className="flex items-center gap-3">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="h-8 w-8 rounded-full"
-              />
-              <div>
-                <p className="text-sm text-ts-text-muted">{item.name}</p>
-                <p className="text-xs text-ts-text-muted">{item.symbol}</p>
-              </div>
+              <AssetIcon symbol={item.symbol} size={32} />
+              <span className="sr-only">
+                {item.name} ({item.symbol})
+              </span>
             </div>
             <p className="text-xl font-semibold mt-4">
               {formatPrice(item.price)}

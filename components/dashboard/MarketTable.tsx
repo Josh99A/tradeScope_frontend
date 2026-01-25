@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "../ui/Card";
 import { getMarkets } from "@/lib/markets";
+import AssetIcon from "@/components/ui/AssetIcon";
 
 type MarketItem = {
   id: string;
@@ -53,12 +54,10 @@ const MarketTable = () => {
                     href={`/dashboard/trade?symbol=${tradeSymbol}&quote=USDT`}
                     className="flex items-center gap-2 hover:text-ts-primary"
                   >
-                    <img
-                      src={market.image}
-                      alt={market.name}
-                      className="h-5 w-5 rounded-full"
-                    />
-                    <span>{market.symbol}</span>
+                    <AssetIcon symbol={market.symbol} size={20} />
+                    <span className="sr-only">
+                      {market.name} ({market.symbol})
+                    </span>
                   </Link>
                 </td>
                 <td className="py-2">{formatPrice(market.price)}</td>

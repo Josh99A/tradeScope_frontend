@@ -2,7 +2,6 @@ import React from "react";
 import AppShell from "@/components/layout/AppShell";
 import WalletSummary from "@/components/dashboard/WalletSummary";
 import MarketTable from "@/components/dashboard/MarketTable";
-import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import WelcomePanel from "@/components/dashboard/WelcomePanel";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import LiveMarketList from "@/components/market/LiveMarketList";
@@ -24,7 +23,6 @@ const Dashboard = () => {
           </div>
 
           <div className="space-y-4">
-            <QuickTradePanel />
             <LiveMarketList limit={5} />
             <RecentActivity />
           </div>

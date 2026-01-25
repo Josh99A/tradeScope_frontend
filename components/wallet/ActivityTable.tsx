@@ -7,6 +7,7 @@ import {
   restoreWalletActivity,
   deleteWalletActivity,
 } from "@/lib/wallet";
+import { formatAmount } from "@/lib/formatters";
 
 type ActivityItem = {
   id?: number | string;
@@ -32,13 +33,6 @@ const formatDate = (value?: string) => {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString();
-};
-
-const formatAmount = (value?: number | string) => {
-  if (value === null || value === undefined || value === "") return "--";
-  const numeric = typeof value === "number" ? value : Number(value);
-  if (Number.isNaN(numeric)) return String(value);
-  return numeric.toLocaleString();
 };
 
 export default function ActivityTable({
@@ -113,9 +107,9 @@ export default function ActivityTable({
 
   return (
     <Card>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-ts-text-main">{title}</h2>
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
           <button
             type="button"
             onClick={() => setShowArchived((prev) => !prev)}
@@ -132,11 +126,12 @@ export default function ActivityTable({
       {visibleItems.length === 0 ? (
         <p className="mt-4 text-sm text-ts-text-muted">No activity yet.</p>
       ) : (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-xs uppercase text-ts-text-muted border-b border-ts-border">
-              <tr>
-                <th className="py-2 text-left font-medium">Date</th>
+        <>
+          <div className="mt-4 hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs uppercase text-ts-text-muted border-b border-ts-border">
+                <tr>
+                  <th className="py-2 text-left font-medium">Date</th>
                 <th className="py-2 text-left font-medium">Type</th>
                 <th className="py-2 text-left font-medium">Amount</th>
                 <th className="py-2 text-left font-medium">Status</th>
@@ -180,9 +175,65 @@ export default function ActivityTable({
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 grid gap-3 md:hidden">
+            {visibleItems.map((item, index) => (
+              <div
+                key={item.id ?? index}
+                className="rounded-lg border border-ts-border bg-ts-bg-main p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-ts-text-muted">
+                      {formatDate(item.created_at)}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-ts-text-main">
+                      {item.type || item.description || "--"}
+                    </p>
+                    <p className="mt-1 text-xs text-ts-text-muted">
+                      Amount:{" "}
+                      <span className="text-ts-text-main">
+                        {formatAmount(item.amount)}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-xs text-ts-text-muted">
+                      Status:{" "}
+                      <span className="text-ts-text-main">
+                        {item.status || "--"}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-xs text-ts-text-muted">
+                      Ref:{" "}
+                      <span className="text-ts-text-main">
+                        {item.reference || "--"}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleArchiveToggle(item)}
+                      className="text-ts-text-muted hover:text-ts-text-main"
+                      disabled={!isValidId(item.id)}
+                    >
+                      {item.archived ? "Restore" : "Archive"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(item)}
+                      className="text-ts-danger hover:opacity-80"
+                      disabled={!isValidId(item.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </Card>
   );

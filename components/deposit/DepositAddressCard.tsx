@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/Button";
 
 export default function DepositAddressCard({
   address,
+  network,
 }: {
   address: string;
+  network?: string | null;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -39,7 +41,9 @@ export default function DepositAddressCard({
         </Button>
       </div>
       <p className="mt-2 text-xs text-ts-text-muted">
-        Send only the selected asset to this address.
+        {network
+          ? `Network: ${network}. Send only the selected asset to this address.`
+          : "Send only the selected asset to this address."}
       </p>
     </div>
   );

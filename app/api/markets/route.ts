@@ -17,7 +17,9 @@ type CacheEntry = {
 };
 
 const CACHE_TTL_MS = 90_000;
+const RATE_LIMIT_COOLDOWN_MS = 2 * 60_000;
 let cache: CacheEntry | null = null;
+let lastRateLimitAt = 0;
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -33,6 +35,10 @@ export async function GET(req: Request) {
     return NextResponse.json(cache.data);
   }
 
+  if (lastRateLimitAt && now - lastRateLimitAt < RATE_LIMIT_COOLDOWN_MS) {
+    return NextResponse.json(cache?.data ?? []);
+  }
+
   const res = await fetch(
     `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=${
       sparklineParam ? "true" : "false"
@@ -41,12 +47,16 @@ export async function GET(req: Request) {
   );
 
   if (!res.ok) {
+    if (res.status === 429) {
+      lastRateLimitAt = now;
+      return NextResponse.json(cache?.data ?? []);
+    }
     if (cache && cache.key === cacheKey) {
       return NextResponse.json(cache.data);
     }
     return NextResponse.json(
       { detail: "Failed to load market data." },
-      { status: res.status }
+      { status: 200 }
     );
   }
 

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { appendSetCookies } from "@/lib/forwardCookies";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   const cookie = req.headers.get("cookie") || "";
 
@@ -8,6 +10,7 @@ export async function GET(req: Request) {
     headers: {
       Cookie: cookie,
     },
+    cache: "no-store",
   });
 
   const data = await res.json();

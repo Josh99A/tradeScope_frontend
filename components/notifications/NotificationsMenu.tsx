@@ -4,6 +4,7 @@ import { Bell } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import toast from "react-hot-toast";
 import {
   getActivity,
   getAdminActivity,
@@ -33,6 +34,7 @@ type NotificationItem = {
   createdAt?: string;
   archived?: boolean;
   deleted?: boolean;
+  action?: string;
 };
 
 const isValidId = (value: unknown) => {
@@ -67,9 +69,26 @@ const humanizeAction = (action?: string) => {
     withdrawal_requested: "Withdrawal requested",
     withdrawal_paid: "Withdrawal confirmed",
     withdrawal_rejected: "Withdrawal rejected",
+    trade_requested: "Trade requested",
+    trade_executed: "Trade executed",
+    trade_rejected: "Trade rejected",
   };
   if (!action) return "Account update";
   return map[action] || action.replace(/_/g, " ");
+};
+
+const getNotificationLink = (action?: string, isAdmin?: boolean) => {
+  if (isAdmin) {
+    if (action === "deposit_created") return "/admin?tab=deposits";
+    if (action === "withdrawal_requested") return "/admin?tab=withdrawals";
+    if (action === "trade_requested") return "/admin/trades";
+    return "/admin";
+  }
+  if (!action) return "/history";
+  if (action.startsWith("deposit_")) return "/history#deposits";
+  if (action.startsWith("withdrawal_")) return "/history#withdrawals";
+  if (action.startsWith("trade_")) return "/dashboard/trade#my-requests";
+  return "/history";
 };
 
 const formatMeta = (meta?: Record<string, unknown> | null) => {
@@ -94,6 +113,8 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const hasLoadedRef = useRef(false);
+  const lastIdsRef = useRef<Set<string>>(new Set());
 
   const unreadCount = items.filter(
     (item) => isValidId(item.sourceId) && !item.archived && !item.deleted
@@ -107,7 +128,7 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
         const data = await getAdminActivity({ includeArchived: true });
         const list = normalizeList<ActivityItem>(data);
         const relevant = list.filter((item) =>
-          ["deposit_created", "withdrawal_requested"].includes(
+          ["deposit_created", "withdrawal_requested", "trade_requested"].includes(
             String(item.action)
           )
         );
@@ -121,12 +142,21 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
             createdAt: item.created_at,
             archived: item.archived,
             deleted: item.deleted,
+            action: item.action,
           }));
         mapped.sort((a, b) => {
           const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return timeB - timeA;
         });
+        if (hasLoadedRef.current) {
+          const newItems = mapped.filter((entry) => !lastIdsRef.current.has(entry.id));
+          newItems.slice(0, 3).forEach((entry) => {
+            toast.success(`New admin notification: ${entry.title}`);
+          });
+        }
+        lastIdsRef.current = new Set(mapped.map((entry) => entry.id));
+        hasLoadedRef.current = true;
         setItems(mapped.slice(0, 8));
       } else {
         const data = await getActivity({ includeArchived: true });
@@ -138,6 +168,8 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
             "deposit_rejected",
             "withdrawal_paid",
             "withdrawal_rejected",
+            "trade_executed",
+            "trade_rejected",
           ].includes(String(item.action))
         );
         const mapped = relevant
@@ -150,6 +182,7 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
             createdAt: item.created_at,
             archived: item.archived,
             deleted: item.deleted,
+            action: item.action,
           }));
         mapped.sort((a, b) => {
           const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -182,7 +215,7 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
   }, [open]);
 
   const quickLink = useMemo(
-    () => (isAdmin ? "/admin" : "/wallet"),
+    () => (isAdmin ? "/admin?tab=withdrawals" : "/history"),
     [isAdmin]
   );
 
@@ -305,7 +338,11 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
               visibleItems.map((item) => (
                 <div key={item.id} className="rounded-lg bg-ts-bg-main p-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <Link
+                      href={getNotificationLink(item.action, isAdmin)}
+                      onClick={() => setOpen(false)}
+                      className="flex-1"
+                    >
                       <p className="text-xs font-medium text-ts-text-main">
                         {item.title}
                       </p>
@@ -319,7 +356,10 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
                           {formatDate(item.createdAt)}
                         </p>
                       )}
-                    </div>
+                      <p className="mt-2 text-[11px] text-ts-primary">
+                        View details
+                      </p>
+                    </Link>
                     <div className="flex flex-col items-end gap-1 text-[11px]">
                       <button
                         type="button"
@@ -348,7 +388,7 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
               href={quickLink}
               className="text-xs font-semibold text-ts-primary hover:underline"
             >
-              {isAdmin ? "View admin requests" : "View wallet activity"}
+              {isAdmin ? "View admin requests" : "View history"}
             </Link>
             <span className="text-[11px] text-ts-text-muted">
               Showing latest 8

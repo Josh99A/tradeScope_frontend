@@ -1,0 +1,704 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import AppShell from "@/components/layout/AppShell";
+import DashboardShell from "@/components/layout/DashboardShell";
+import Card from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import StatusBadge from "@/components/ui/StatusBadge";
+import AssetIcon from "@/components/ui/AssetIcon";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useRouter } from "next/navigation";
+import {
+  getAdminAssets,
+  createAdminAsset,
+  updateAdminAsset,
+  deleteAdminAsset,
+} from "@/lib/admin";
+
+type AssetItem = {
+  id: number | string;
+  name: string;
+  symbol: string;
+  network: string;
+  is_active: boolean;
+  icon?: string | null;
+  deposit_address: string;
+  deposit_qr_code: string;
+  min_deposit: number | string;
+  min_withdraw: number | string;
+  withdraw_fee: number | string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+const formatDate = (value?: string) => {
+  if (!value) return "--";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString();
+};
+
+const normalizeList = <T,>(data: unknown): T[] => {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === "object") {
+    const maybe = data as { results?: T[]; items?: T[] };
+    return maybe.results || maybe.items || [];
+  }
+  return [];
+};
+
+export default function AdminAssetsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const isAdmin = !!(user?.is_staff || user?.is_superuser);
+
+  const [assets, setAssets] = useState<AssetItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
+  const [networkFilter, setNetworkFilter] = useState("all");
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<AssetItem | null>(null);
+  const [form, setForm] = useState({
+    name: "",
+    symbol: "",
+    network: "",
+    is_active: true,
+    icon: null as File | null,
+    deposit_address: "",
+    deposit_qr_code: null as File | null,
+    min_deposit: "",
+    min_withdraw: "",
+    withdraw_fee: "",
+  });
+
+  const presets: Array<{
+    name: string;
+    symbol: string;
+    network: string;
+  }> = [
+    { name: "Bitcoin", symbol: "BTC", network: "BTC" },
+    { name: "Ethereum", symbol: "ETH", network: "ERC20" },
+    { name: "Solana", symbol: "SOL", network: "SOLANA" },
+    { name: "USD Coin", symbol: "USDC", network: "ERC20" },
+    { name: "Tether", symbol: "USDT", network: "TRC20" },
+    { name: "Dogecoin", symbol: "DOGE", network: "DOGE" },
+    { name: "XRP", symbol: "XRP", network: "XRP" },
+    { name: "Cardano", symbol: "ADA", network: "ADA" },
+  ];
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      router.replace("/dashboard");
+    }
+  }, [authLoading, isAdmin, router]);
+
+  const loadAssets = async () => {
+    setLoading(true);
+    setNotice(null);
+    try {
+      const data = await getAdminAssets();
+      setAssets(normalizeList<AssetItem>(data));
+    } catch {
+      setNotice("Unable to load assets.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!authLoading && isAdmin) {
+      loadAssets();
+    }
+  }, [authLoading, isAdmin]);
+
+  const networks = useMemo(() => {
+    const set = new Set(assets.map((item) => item.network));
+    return ["all", ...Array.from(set)];
+  }, [assets]);
+
+  const filteredAssets = assets.filter((asset) => {
+    if (status === "active" && !asset.is_active) return false;
+    if (status === "inactive" && asset.is_active) return false;
+    if (networkFilter !== "all" && asset.network !== networkFilter) return false;
+    const search = query.trim().toLowerCase();
+    if (!search) return true;
+    return (
+      asset.name.toLowerCase().includes(search) ||
+      asset.symbol.toLowerCase().includes(search) ||
+      asset.network.toLowerCase().includes(search)
+    );
+  });
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm({
+      name: "",
+      symbol: "",
+      network: "",
+      is_active: true,
+      icon: null,
+      deposit_address: "",
+      deposit_qr_code: null,
+      min_deposit: "",
+      min_withdraw: "",
+      withdraw_fee: "",
+    });
+    setModalOpen(true);
+  };
+
+  const openEdit = (asset: AssetItem) => {
+    setEditing(asset);
+    setForm({
+      name: asset.name,
+      symbol: asset.symbol,
+      network: asset.network,
+      is_active: asset.is_active,
+      icon: null,
+      deposit_address: asset.deposit_address,
+      deposit_qr_code: null,
+      min_deposit: String(asset.min_deposit),
+      min_withdraw: String(asset.min_withdraw),
+      withdraw_fee: String(asset.withdraw_fee),
+    });
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    setNotice(null);
+    if (!form.name || !form.symbol || !form.network) {
+      setNotice("Name, symbol, and network are required.");
+      return;
+    }
+    if (
+      form.min_deposit === "" ||
+      form.min_withdraw === "" ||
+      form.withdraw_fee === ""
+    ) {
+      setNotice("Min deposit, min withdraw, and withdraw fee are required.");
+      return;
+    }
+    if (form.is_active && !form.deposit_address) {
+      setNotice("Deposit address is required for active assets.");
+      return;
+    }
+    if (form.is_active && !form.deposit_qr_code && !editing?.deposit_qr_code) {
+      setNotice("Deposit QR code is required for active assets.");
+      return;
+    }
+
+    const body = new FormData();
+    body.append("name", form.name);
+    body.append("symbol", form.symbol.toUpperCase());
+    body.append("network", form.network);
+    body.append("is_active", String(form.is_active));
+    body.append("deposit_address", form.deposit_address);
+    body.append("min_deposit", form.min_deposit);
+    body.append("min_withdraw", form.min_withdraw);
+    body.append("withdraw_fee", form.withdraw_fee);
+    if (form.icon) {
+      body.append("icon", form.icon);
+    }
+    if (form.deposit_qr_code) {
+      body.append("deposit_qr_code", form.deposit_qr_code);
+    }
+
+    try {
+      if (editing) {
+        await updateAdminAsset(editing.id, body);
+      } else {
+        await createAdminAsset(body);
+      }
+      setModalOpen(false);
+      await loadAssets();
+    } catch {
+      setNotice("Unable to save asset.");
+    }
+  };
+
+  const handleDelete = async (asset: AssetItem) => {
+    const ok = window.confirm(
+      `Delete ${asset.symbol} ${asset.network}? This cannot be undone.`
+    );
+    if (!ok) return;
+    try {
+      await deleteAdminAsset(asset.id);
+      await loadAssets();
+    } catch {
+      setNotice("Unable to delete asset.");
+    }
+  };
+
+  const toggleActive = async (asset: AssetItem) => {
+    try {
+      await updateAdminAsset(asset.id, {
+        is_active: !asset.is_active,
+      });
+      await loadAssets();
+    } catch {
+      setNotice("Unable to update asset status.");
+    }
+  };
+
+  if (authLoading) return null;
+  if (!isAdmin) return null;
+
+  return (
+    <DashboardShell>
+      <AppShell>
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-semibold text-ts-text-main">
+                Assets
+              </h1>
+              <p className="text-sm text-ts-text-muted">
+                Manage deposit and withdrawal assets.
+              </p>
+            </div>
+            <Button
+              type="button"
+              onClick={openCreate}
+              className="w-full bg-ts-primary text-white hover:opacity-90 sm:w-auto"
+            >
+              Add asset
+            </Button>
+          </div>
+
+          {notice && <div className="text-sm text-ts-text-muted">{notice}</div>}
+
+          <Card>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search symbol, name, network"
+                className="w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+              />
+              <select
+                value={status}
+                onChange={(event) =>
+                  setStatus(event.target.value as "all" | "active" | "inactive")
+                }
+                className="w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm sm:w-40"
+              >
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <select
+                value={networkFilter}
+                onChange={(event) => setNetworkFilter(event.target.value)}
+                className="w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm sm:w-48"
+              >
+                {networks.map((network) => (
+                  <option key={network} value={network}>
+                    {network === "all" ? "All networks" : network}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </Card>
+
+          <Card>
+            {loading ? (
+              <p className="text-sm text-ts-text-muted">Loading assets...</p>
+            ) : filteredAssets.length === 0 ? (
+              <p className="text-sm text-ts-text-muted">No assets found.</p>
+            ) : (
+              <>
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full min-w-[960px] text-sm">
+                  <thead className="text-xs uppercase text-ts-text-muted border-b border-ts-border">
+                    <tr>
+                      <th className="py-2 text-left font-medium">Asset</th>
+                      <th className="py-2 text-left font-medium">QR</th>
+                      <th className="py-2 text-left font-medium">Network</th>
+                      <th className="py-2 text-left font-medium">Status</th>
+                      <th className="py-2 text-left font-medium">Min deposit</th>
+                      <th className="py-2 text-left font-medium">Min withdraw</th>
+                      <th className="py-2 text-left font-medium">Fee</th>
+                      <th className="py-2 text-left font-medium">Updated</th>
+                      <th className="py-2 text-left font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ts-border">
+                    {filteredAssets.map((asset) => (
+                      <tr key={asset.id}>
+                        <td className="py-3 pr-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-ts-border bg-ts-bg-main">
+                            <AssetIcon symbol={asset.symbol} size={28} />
+                          </div>
+                          <span className="sr-only">
+                            {asset.name} ({asset.symbol})
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <img
+                            src={asset.deposit_qr_code}
+                            alt={`${asset.symbol} QR`}
+                            className="h-10 w-10 rounded-md border border-ts-border bg-white p-1"
+                          />
+                        </td>
+                        <td className="py-3 pr-4">{asset.network}</td>
+                        <td className="py-3 pr-4">
+                          <StatusBadge
+                            value={asset.is_active ? "active" : "inactive"}
+                          />
+                        </td>
+                        <td className="py-3 pr-4">{asset.min_deposit}</td>
+                        <td className="py-3 pr-4">{asset.min_withdraw}</td>
+                        <td className="py-3 pr-4">{asset.withdraw_fee}</td>
+                        <td className="py-3 pr-4">
+                          {formatDate(asset.updated_at)}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              onClick={() => openEdit(asset)}
+                              className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={() => toggleActive(asset)}
+                              className="bg-ts-primary text-white hover:opacity-90"
+                            >
+                              {asset.is_active ? "Deactivate" : "Activate"}
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={() => handleDelete(asset)}
+                              className="bg-ts-danger text-white hover:opacity-90"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  </table>
+                </div>
+                <div className="grid gap-3 md:hidden">
+                  {filteredAssets.map((asset) => (
+                    <div
+                      key={asset.id}
+                      className="rounded-lg border border-ts-border bg-ts-bg-main p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-ts-border bg-ts-bg-main">
+                            <AssetIcon symbol={asset.symbol} size={28} />
+                          </div>
+                          <span className="sr-only">
+                            {asset.name} ({asset.symbol})
+                          </span>
+                        </div>
+                        <StatusBadge
+                          value={asset.is_active ? "active" : "inactive"}
+                        />
+                      </div>
+                      <p className="mt-2 text-xs text-ts-text-muted">
+                        Network:{" "}
+                        <span className="text-ts-text-main">{asset.network}</span>
+                      </p>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-ts-text-muted">
+                        <div>
+                          <p>Min deposit</p>
+                          <p className="text-ts-text-main">
+                            {asset.min_deposit}
+                          </p>
+                        </div>
+                        <div>
+                          <p>Min withdraw</p>
+                          <p className="text-ts-text-main">
+                            {asset.min_withdraw}
+                          </p>
+                        </div>
+                        <div>
+                          <p>Fee</p>
+                          <p className="text-ts-text-main">
+                            {asset.withdraw_fee}
+                          </p>
+                        </div>
+                        <div>
+                          <p>Updated</p>
+                          <p className="text-ts-text-main">
+                            {formatDate(asset.updated_at)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => openEdit(asset)}
+                          className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => toggleActive(asset)}
+                          className="bg-ts-primary text-white hover:opacity-90"
+                        >
+                          {asset.is_active ? "Deactivate" : "Activate"}
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => handleDelete(asset)}
+                          className="bg-ts-danger text-white hover:opacity-90"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </Card>
+        </div>
+
+        {modalOpen && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-3 sm:items-center sm:p-6">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setModalOpen(false)}
+              aria-label="Close"
+            />
+            <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-ts-border bg-ts-bg-card p-5 shadow-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-ts-text-main">
+                  {editing ? "Edit asset" : "Add asset"}
+                </h2>
+                <Button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
+                >
+                  Close
+                </Button>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <p className="text-xs uppercase tracking-wide text-ts-text-muted">
+                    Common presets
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {presets.map((preset) => (
+                      <Button
+                        key={`${preset.symbol}-${preset.network}`}
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            name: preset.name,
+                            symbol: preset.symbol,
+                            network: preset.network,
+                          }))
+                        }
+                        className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
+                      >
+                        <AssetIcon symbol={preset.symbol} size={20} />
+                        <span className="sr-only">{preset.symbol}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="asset-name" className="text-xs text-ts-text-muted">
+                    Asset name <span className="text-ts-danger">*</span>
+                  </label>
+                  <input
+                    id="asset-name"
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, name: event.target.value }))
+                    }
+                    placeholder="e.g. Tether"
+                    className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="asset-symbol" className="text-xs text-ts-text-muted">
+                    Symbol <span className="text-ts-danger">*</span>
+                  </label>
+                  <input
+                    id="asset-symbol"
+                    value={form.symbol}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        symbol: event.target.value.toUpperCase(),
+                      }))
+                    }
+                    placeholder="e.g. USDT"
+                    className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="asset-network" className="text-xs text-ts-text-muted">
+                    Network <span className="text-ts-danger">*</span>
+                  </label>
+                  <input
+                    id="asset-network"
+                    value={form.network}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, network: event.target.value }))
+                    }
+                    placeholder="e.g. TRC20"
+                    className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="asset-status" className="text-xs text-ts-text-muted">
+                    Status
+                  </label>
+                  <select
+                    id="asset-status"
+                    value={form.is_active ? "true" : "false"}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        is_active: event.target.value === "true",
+                      }))
+                    }
+                    className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+                  >
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="asset-icon" className="text-xs text-ts-text-muted">
+                    Symbol icon (optional)
+                  </label>
+                  <input
+                    id="asset-icon"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        icon: event.target.files?.[0] || null,
+                      }))
+                    }
+                    className="mt-2 w-full text-xs text-ts-text-muted file:mr-3 file:rounded-md file:border file:border-ts-border file:bg-ts-bg-main file:px-3 file:py-1 file:text-xs file:text-ts-text-main hover:file:border-ts-primary/40"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="asset-deposit-address" className="text-xs text-ts-text-muted">
+                    Deposit address <span className="text-ts-danger">*</span>
+                  </label>
+                  <input
+                    id="asset-deposit-address"
+                    value={form.deposit_address}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        deposit_address: event.target.value,
+                      }))
+                    }
+                    placeholder="Public deposit address"
+                    className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="asset-deposit-qr" className="text-xs text-ts-text-muted">
+                    Deposit QR code <span className="text-ts-danger">*</span>
+                  </label>
+                  <input
+                    id="asset-deposit-qr"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        deposit_qr_code: event.target.files?.[0] || null,
+                      }))
+                    }
+                    className="mt-2 w-full text-xs text-ts-text-muted file:mr-3 file:rounded-md file:border file:border-ts-border file:bg-ts-bg-main file:px-3 file:py-1 file:text-xs file:text-ts-text-main hover:file:border-ts-primary/40"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="asset-min-deposit" className="text-xs text-ts-text-muted">
+                    Minimum deposit (asset units) <span className="text-ts-danger">*</span>
+                  </label>
+                  <input
+                    id="asset-min-deposit"
+                    value={form.min_deposit}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        min_deposit: event.target.value,
+                      }))
+                    }
+                    placeholder="0.0"
+                    className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="asset-min-withdraw" className="text-xs text-ts-text-muted">
+                    Minimum withdraw (asset units) <span className="text-ts-danger">*</span>
+                  </label>
+                  <input
+                    id="asset-min-withdraw"
+                    value={form.min_withdraw}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        min_withdraw: event.target.value,
+                      }))
+                    }
+                    placeholder="0.0"
+                    className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="asset-withdraw-fee" className="text-xs text-ts-text-muted">
+                    Withdraw fee (asset units) <span className="text-ts-danger">*</span>
+                  </label>
+                  <input
+                    id="asset-withdraw-fee"
+                    value={form.withdraw_fee}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        withdraw_fee: event.target.value,
+                      }))
+                    }
+                    placeholder="0.0"
+                    className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  className="bg-ts-primary text-white hover:opacity-90"
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </AppShell>
+    </DashboardShell>
+  );
+}

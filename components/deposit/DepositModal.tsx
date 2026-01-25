@@ -1,21 +1,24 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import DepositMethodSelector, {
-  DepositAsset,
-} from "@/components/deposit/DepositMethodSelector";
 import DepositAddressCard from "@/components/deposit/DepositAddressCard";
 import DepositQRCode from "@/components/deposit/DepositQRCode";
 import DepositAmountInput from "@/components/deposit/DepositAmountInput";
 import DepositActions from "@/components/deposit/DepositActions";
+import AssetIcon from "@/components/ui/AssetIcon";
 
-const ASSET_ADDRESSES: Record<DepositAsset, string> = {
-  USDC: "0x7a3d...c31f",
-  USDT: "0x2b7f...f89c",
-  ETH: "0x9c4a...1a07",
-  BTC: "bc1q2s...p9x3",
-  XRP: "rG7Z...9uT2",
-  DOGE: "D9s2...k3Lm",
+type AssetItem = {
+  id: number | string;
+  name: string;
+  symbol: string;
+  network: string;
+  is_active: boolean;
+  icon?: string | null;
+  deposit_address: string;
+  deposit_qr_code: string;
+  min_deposit: number | string;
+  min_withdraw: number | string;
+  withdraw_fee: number | string;
 };
 
 const parseAmount = (value: string) => {
@@ -24,43 +27,136 @@ const parseAmount = (value: string) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const formatTrimmed = (value: number, maxDecimals = 8) => {
+  if (!Number.isFinite(value)) return "";
+  const fixed = value.toFixed(maxDecimals);
+  return fixed.replace(/\.?0+$/, "");
+};
+
 export default function DepositModal({
   open,
   onOpenChange,
   onConfirm,
+  initialAssetId,
+  assets,
+  prices,
+  pricesLoading,
+  pricesError,
+  rateLimited,
+  onRetryPrice,
   locked = false,
   lockMessage,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (payload: {
-    asset: DepositAsset;
+    assetId: number | string;
     amount: number;
-    address: string;
   }) => void;
+  initialAssetId?: number | string | null;
+  assets?: AssetItem[];
+  prices?: Record<string, number>;
+  pricesLoading?: boolean;
+  pricesError?: string | null;
+  rateLimited?: boolean;
+  onRetryPrice?: (symbol: string) => void;
   locked?: boolean;
   lockMessage?: string;
 }) {
-  const [asset, setAsset] = useState<DepositAsset>("USDC");
+  const [assetId, setAssetId] = useState<number | string | null>(null);
   const [amount, setAmount] = useState("");
+  const [usdAmount, setUsdAmount] = useState("");
+  const [editingField, setEditingField] = useState<"asset" | "usd" | null>(
+    null
+  );
+  const triedRef = useRef<string | null>(null);
   const [touched, setTouched] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const initialFocusRef = useRef<HTMLButtonElement | null>(null);
 
-  const address = useMemo(() => ASSET_ADDRESSES[asset], [asset]);
+  const activeAssets = (assets || []).filter((item) => item.is_active);
+  const symbols = useMemo(() => {
+    const set = new Set(activeAssets.map((item) => item.symbol));
+    return Array.from(set);
+  }, [activeAssets]);
+  const selectedAsset = useMemo(
+    () => activeAssets.find((item) => String(item.id) === String(assetId)),
+    [activeAssets, assetId]
+  );
+  const networksForSymbol = useMemo(() => {
+    if (!selectedAsset) return [];
+    return activeAssets.filter((item) => item.symbol === selectedAsset.symbol);
+  }, [activeAssets, selectedAsset]);
+
+  useEffect(() => {
+    if (!assetId && activeAssets.length > 0) {
+      setAssetId(activeAssets[0].id);
+    }
+  }, [assetId, activeAssets]);
+
+  const symbol = selectedAsset?.symbol || "";
   const numericAmount = parseAmount(amount);
-  const isValid = numericAmount > 0;
+  const priceUsd = symbol ? prices?.[symbol.toUpperCase()] || 0 : 0;
+  const minDeposit = parseAmount(String(selectedAsset?.min_deposit || "0"));
+  const assetDecimals =
+    symbol === "USDT" || symbol === "USDC"
+      ? 2
+      : symbol === "XRP" || symbol === "DOGE"
+      ? 4
+      : 8;
+  const isValid =
+    numericAmount > 0 && numericAmount >= minDeposit && !!selectedAsset;
   const showError = touched && !isValid;
+  const priceUnavailable = !priceUsd || Number.isNaN(priceUsd);
 
   useEffect(() => {
     if (open) {
+      if (initialAssetId) {
+        setAssetId(initialAssetId);
+      }
       setTouched(false);
       setAmount("");
+      setUsdAmount("");
+      setEditingField(null);
+      triedRef.current = null;
       window.setTimeout(() => {
         initialFocusRef.current?.focus();
       }, 0);
     }
-  }, [open]);
+  }, [open, initialAssetId]);
+
+  useEffect(() => {
+    if (!open || !priceUnavailable || !onRetryPrice || !symbol) return;
+    if (triedRef.current === symbol) return;
+    triedRef.current = symbol;
+    onRetryPrice(symbol);
+  }, [open, symbol, priceUnavailable, onRetryPrice]);
+
+  useEffect(() => {
+    if (editingField === "usd") return;
+    if (!amount) {
+      setUsdAmount("");
+      return;
+    }
+    const nextAmount = parseAmount(amount);
+    if (priceUsd > 0 && Number.isFinite(nextAmount)) {
+      setUsdAmount(formatTrimmed(nextAmount * priceUsd, 2));
+    } else {
+      setUsdAmount("");
+    }
+  }, [symbol, priceUsd, amount, editingField]);
+
+  useEffect(() => {
+    if (editingField === "asset") return;
+    if (!usdAmount) {
+      setAmount("");
+      return;
+    }
+    const nextUsd = parseAmount(usdAmount);
+    if (priceUsd > 0 && Number.isFinite(nextUsd)) {
+      setAmount(formatTrimmed(nextUsd / priceUsd, assetDecimals));
+    }
+  }, [symbol, priceUsd, usdAmount, editingField, assetDecimals]);
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -131,30 +227,161 @@ export default function DepositModal({
           )}
           <section>
             <p className="text-xs uppercase tracking-wide text-ts-text-muted">
-              Select method
+              Select asset
             </p>
-            <div className="mt-3">
-              <DepositMethodSelector
-                value={asset}
-                onChange={(value) => setAsset(value)}
+            {activeAssets.length === 0 ? (
+              <p className="mt-2 text-sm text-ts-text-muted">
+                No active assets available.
+              </p>
+            ) : (
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {symbols.map((symbol) => {
+                  const asset = activeAssets.find(
+                    (item) => item.symbol === symbol
+                  );
+                  if (!asset) return null;
+                  const isActive = selectedAsset?.symbol === symbol;
+                  return (
+                    <button
+                      key={symbol}
+                      type="button"
+                      onClick={() => setAssetId(asset.id)}
+                      className={`flex min-w-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs transition sm:text-sm ${
+                        isActive
+                          ? "border-ts-primary bg-ts-primary/10 text-ts-text-main"
+                          : "border-ts-border bg-ts-bg-main text-ts-text-muted hover:border-ts-primary/50"
+                      }`}
+                      aria-pressed={isActive}
+                    >
+                      <AssetIcon symbol={asset.symbol} size={28} />
+                      <span className="sr-only">{asset.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          {selectedAsset && (
+            <section>
+              <label className="text-xs uppercase tracking-wide text-ts-text-muted">
+                Network
+              </label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {networksForSymbol.map((item) => {
+                  const isActive = String(item.id) === String(assetId);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setAssetId(item.id)}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                        isActive
+                          ? "border-ts-primary bg-ts-primary text-white"
+                          : "border-ts-border bg-ts-bg-main text-ts-text-muted hover:text-ts-text-main"
+                      }`}
+                    >
+                      {item.network}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {selectedAsset && (
+            <section className="grid grid-cols-1 gap-4 sm:grid-cols-[1.3fr_1fr]">
+              <DepositAddressCard
+                address={selectedAsset.deposit_address}
+                network={selectedAsset.network}
               />
+              <DepositQRCode
+                asset={`${selectedAsset.symbol} (${selectedAsset.network})`}
+                imageUrl={selectedAsset.deposit_qr_code}
+              />
+            </section>
+          )}
+          {selectedAsset && (
+            <div className="rounded-lg border border-ts-border bg-ts-bg-main px-3 py-2 text-xs text-ts-text-muted">
+              Minimum deposit:{" "}
+              <span className="text-ts-text-main">
+                {minDeposit}
+                <span className="ml-2 inline-flex items-center">
+                  <AssetIcon symbol={symbol} size={14} />
+                  <span className="sr-only">{symbol}</span>
+                </span>
+              </span>
+              {priceUsd ? (
+                <span className="text-ts-text-muted">
+                  {" "}
+                  (~${formatTrimmed(minDeposit * priceUsd, 2)})
+                </span>
+              ) : null}
             </div>
-          </section>
+          )}
 
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-[1.3fr_1fr]">
-            <DepositAddressCard address={address} />
-            <DepositQRCode asset={asset} />
-          </section>
-
-          <section>
-            <DepositAmountInput
-              value={amount}
-              onChange={(value) => {
-                setTouched(true);
-                setAmount(value);
-              }}
-              error={showError ? "Enter a valid deposit amount." : undefined}
-            />
+          <section className="space-y-3 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0">
+              <DepositAmountInput
+                value={amount}
+                onChange={(value) => {
+                  setTouched(true);
+                  setEditingField("asset");
+                  setAmount(value);
+                }}
+                error={
+                  showError
+                  ? `Minimum deposit is ${minDeposit}.`
+                  : priceUnavailable
+                  ? "Live price unavailable."
+                  : undefined
+                }
+              />
+            <div>
+              <label className="text-xs text-ts-text-muted">
+                Amount (USD)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={usdAmount}
+                onChange={(event) => {
+                  setTouched(true);
+                  setEditingField("usd");
+                  setUsdAmount(event.target.value);
+                }}
+                placeholder={
+                  priceUnavailable ? "USD price unavailable" : "Enter USD amount"
+                }
+                className="mt-2 w-full rounded-md bg-ts-input-bg border border-ts-input-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ts-primary"
+              />
+              <p className="mt-2 text-xs text-ts-text-muted">
+                {pricesLoading
+                  ? "Loading price..."
+                  : pricesError
+                  ? pricesError
+                  : rateLimited
+                  ? "Rate limited. Using cached price if available."
+                  : priceUsd ? (
+                      <span className="inline-flex items-center gap-1">
+                        1
+                        <AssetIcon symbol={symbol} size={14} />
+                        <span className="sr-only">{symbol}</span>
+                        = ${priceUsd.toFixed(2)}
+                      </span>
+                    )
+                  : "Live price unavailable for this asset."}
+              </p>
+              {!pricesLoading && priceUnavailable && onRetryPrice && symbol && (
+                <button
+                  type="button"
+                  onClick={() => onRetryPrice(symbol)}
+                  className="mt-2 text-xs text-ts-primary hover:underline"
+                >
+                  Retry CoinCap price
+                </button>
+              )}
+            </div>
           </section>
         </div>
 
@@ -162,29 +389,24 @@ export default function DepositModal({
           <DepositActions
             onCancel={() => onOpenChange(false)}
             onConfirm={() => {
-              if (!isValid) {
+              if (!isValid || !selectedAsset) {
                 setTouched(true);
                 return;
               }
-              if (locked) {
+              if (locked || priceUnavailable) {
                 return;
               }
               onConfirm({
-                asset,
+                assetId: selectedAsset.id,
                 amount: numericAmount,
-                address,
               });
             }}
-            canConfirm={isValid && !locked}
+            canConfirm={isValid && !locked && !priceUnavailable}
             loading={false}
           />
         </div>
 
-        <button
-          ref={initialFocusRef}
-          type="button"
-          className="sr-only"
-        >
+        <button ref={initialFocusRef} type="button" className="sr-only">
           Focus trap
         </button>
       </div>

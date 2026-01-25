@@ -22,7 +22,7 @@ import {
 } from "@/lib/admin";
 import { getAdminActivity } from "@/lib/activity";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type AdminItem = {
   id?: number | string;
@@ -83,6 +83,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<
     "users" | "deposits" | "withdrawals" | "activity"
   >("users");
@@ -95,17 +96,27 @@ export default function AdminDashboardPage() {
     }
   }, [authLoading, isAdmin, router]);
 
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (
+      tab &&
+      ["users", "deposits", "withdrawals", "activity"].includes(tab)
+    ) {
+      setActiveTab(tab as "users" | "deposits" | "withdrawals" | "activity");
+    }
+  }, [searchParams]);
+
   const loadAdminData = async () => {
     setLoading(true);
     setNotice(null);
     try {
       const [depositData, withdrawalData, userData, activityData] =
         await Promise.all([
-        getAdminDeposits(),
-        getAdminWithdrawals(),
-        getAdminUsers(),
-        getAdminActivity({ includeArchived: true }),
-      ]);
+          getAdminDeposits(),
+          getAdminWithdrawals(),
+          getAdminUsers(),
+          getAdminActivity({ includeArchived: true }),
+        ]);
       setDeposits(normalizeList<AdminItem>(depositData));
       setWithdrawals(normalizeList<AdminItem>(withdrawalData));
       setUsers(normalizeList<AdminUser>(userData));
@@ -171,13 +182,9 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          {notice && (
-            <div className="text-sm text-ts-text-muted">
-              {notice}
-            </div>
-          )}
+          {notice && <div className="text-sm text-ts-text-muted">{notice}</div>}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap">
             {[
               { id: "users", label: "Users" },
               { id: "deposits", label: "Deposits" },
@@ -187,12 +194,16 @@ export default function AdminDashboardPage() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() =>
-                  setActiveTab(
-                    tab.id as "users" | "deposits" | "withdrawals" | "activity"
-                  )
-                }
-                className={`rounded-full border px-4 py-2 text-sm transition ${
+                onClick={() => {
+                  const value = tab.id as
+                    | "users"
+                    | "deposits"
+                    | "withdrawals"
+                    | "activity";
+                  setActiveTab(value);
+                  router.replace(`/admin?tab=${value}`);
+                }}
+                className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm transition ${
                   activeTab === tab.id
                     ? "border-ts-primary bg-ts-primary/10 text-ts-text-main"
                     : "border-ts-border bg-ts-bg-card text-ts-text-muted hover:border-ts-primary/40"

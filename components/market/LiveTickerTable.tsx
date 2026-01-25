@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getMarkets } from "@/lib/markets";
+import AssetIcon from "@/components/ui/AssetIcon";
 
 type MarketItem = {
   id: string;
@@ -84,22 +85,17 @@ export default function LiveTickerTable({ limit = 8 }: { limit?: number }) {
             {items.map((item) => {
               const change = item.change24h ?? 0;
               const isPositive = change >= 0;
-              const tradeSymbol = `${item.symbol}USD`;
+              const tradeSymbol = `${item.symbol}USDT`;
               return (
                 <tr key={item.id}>
                   <td className="py-3 pr-4">
                     <Link
-                      href={`/dashboard/trade?symbol=${tradeSymbol}`}
+                      href={`/dashboard/trade?symbol=${tradeSymbol}&quote=USDT`}
                       className="flex items-center gap-2 hover:text-ts-primary"
                     >
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="h-6 w-6 rounded-full"
-                      />
-                      <span className="font-medium">{item.symbol}</span>
-                      <span className="text-xs text-ts-text-muted">
-                        {item.name}
+                      <AssetIcon symbol={item.symbol} size={24} />
+                      <span className="sr-only">
+                        {item.name} ({item.symbol})
                       </span>
                     </Link>
                   </td>

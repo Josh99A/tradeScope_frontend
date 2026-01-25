@@ -19,10 +19,10 @@ const  DashboardTopBar = ({
 
   return (
     <header className="fixed top-0 inset-x-0 h-14 bg-ts-bg-card border-b border-ts-border z-50">
-  <div className="h-full flex items-center justify-between px-4">
+  <div className="h-full flex items-center justify-between px-3 sm:px-4">
     
     {/* Left */}
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
       <Button
         className="md:hidden p-2 rounded-md hover:bg-ts-hover active:bg-ts-active transition"
         aria-label="Open menu"
@@ -40,17 +40,17 @@ const  DashboardTopBar = ({
     </div>
 
     {/* Right */}
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 sm:gap-3">
       <Link
         href="/wallet"
-        className="inline-flex items-center rounded-md border border-ts-primary bg-ts-primary/10 px-3 py-1 text-xs font-semibold text-ts-text-main hover:bg-ts-primary/20 transition"
+        className="hidden sm:inline-flex items-center rounded-md border border-ts-primary bg-ts-primary/10 px-3 py-1 text-xs font-semibold text-ts-text-main hover:bg-ts-primary/20 transition"
       >
         Wallet
       </Link>
       {user && (
-        <div className="hidden sm:flex flex-col items-end leading-tight">
+        <div className="hidden sm:flex flex-col items-end leading-tight max-w-[140px]">
           <span className="text-xs text-ts-text-muted">Welcome back</span>
-          <span className="text-sm font-medium">
+          <span className="text-sm font-medium truncate">
             {user.username || user.email?.split("@")[0]}
           </span>
         </div>
@@ -70,7 +70,9 @@ const  DashboardTopBar = ({
           alt={user?.username || "User avatar"}
         />
       </Link>
-      <ThemeToggle/>
+      <div className="hidden sm:block">
+        <ThemeToggle/>
+      </div>
     </div>
   </div>
 </header>

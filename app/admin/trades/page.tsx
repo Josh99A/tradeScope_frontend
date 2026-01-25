@@ -1,0 +1,198 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import AppShell from "@/components/layout/AppShell";
+import DashboardShell from "@/components/layout/DashboardShell";
+import AdminTradeRequestsTable from "@/components/admin/AdminTradeRequestsTable";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useRouter } from "next/navigation";
+import {
+  getAdminTradeRequests,
+  executeTradeRequest,
+  rejectTradeRequest,
+} from "@/lib/trades";
+
+type TradeRequestItem = {
+  id?: number | string;
+  user?: {
+    id?: number | string;
+    email?: string;
+    username?: string;
+    display_name?: string;
+  };
+  symbol?: string;
+  network?: string;
+  side?: string;
+  quote_symbol?: string;
+  status?: string;
+  requested_amount_asset?: number | string;
+  requested_amount_usd?: number | string;
+  conversion_rate_used?: number | string;
+  user_note?: string;
+  admin_note?: string;
+  rejection_reason?: string;
+  executed_price?: number | string;
+  executed_amount_asset?: number | string;
+  profit_or_loss_usd?: number | string;
+  created_at?: string;
+  executed_at?: string;
+};
+
+const normalizeList = <T,>(data: unknown): T[] => {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === "object") {
+    const maybe = data as { results?: T[]; items?: T[] };
+    return maybe.results || maybe.items || [];
+  }
+  return [];
+};
+
+export default function AdminTradesPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const isAdmin = !!(user?.is_staff || user?.is_superuser);
+
+  const [items, setItems] = useState<TradeRequestItem[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [filters, setFilters] = useState({
+    status: "",
+    symbol: "",
+    side: "",
+    user: "",
+  });
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      router.replace("/dashboard");
+    }
+  }, [authLoading, isAdmin, router]);
+
+  const loadRequests = async () => {
+    setNotice(null);
+    try {
+      const data = await getAdminTradeRequests(filters);
+      setItems(normalizeList<TradeRequestItem>(data));
+    } catch {
+      setNotice("Unable to load trade requests.");
+    }
+  };
+
+  useEffect(() => {
+    if (!authLoading && isAdmin) {
+      loadRequests();
+    }
+  }, [authLoading, isAdmin, filters]);
+
+  const handleExecute = async (
+    id: number | string,
+    payload: {
+      executed_price: string;
+      executed_amount_asset: string;
+      profit_or_loss_usd: string;
+      admin_note?: string;
+    }
+  ) => {
+    setNotice(null);
+    try {
+      await executeTradeRequest(id, payload);
+      await loadRequests();
+    } catch (error) {
+      const message =
+        (typeof error === "object" &&
+          error &&
+          "response" in error &&
+          (error as { response?: { data?: { detail?: string } } }).response
+            ?.data?.detail) ||
+        "Action failed. Please try again.";
+      setNotice(message);
+    }
+  };
+
+  const handleReject = async (id: number | string, reason: string) => {
+    setNotice(null);
+    try {
+      await rejectTradeRequest(id, reason);
+      await loadRequests();
+    } catch (error) {
+      const message =
+        (typeof error === "object" &&
+          error &&
+          "response" in error &&
+          (error as { response?: { data?: { detail?: string } } }).response
+            ?.data?.detail) ||
+        "Action failed. Please try again.";
+      setNotice(message);
+    }
+  };
+
+  if (authLoading) return null;
+  if (!isAdmin) return null;
+
+  return (
+    <DashboardShell>
+      <AppShell>
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-xl font-semibold text-ts-text-main">
+              Trade requests
+            </h1>
+            <p className="text-sm text-ts-text-muted">
+              Review and execute user trade requests.
+            </p>
+          </div>
+
+          {notice && <div className="text-sm text-ts-text-muted">{notice}</div>}
+
+          <div className="grid gap-2 sm:grid-cols-4">
+            <input
+              value={filters.symbol}
+              onChange={(event) =>
+                setFilters((prev) => ({ ...prev, symbol: event.target.value }))
+              }
+              placeholder="Symbol"
+              className="w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+            />
+            <select
+              value={filters.side}
+              onChange={(event) =>
+                setFilters((prev) => ({ ...prev, side: event.target.value }))
+              }
+              className="w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+            >
+              <option value="">All sides</option>
+              <option value="BUY">Buy</option>
+              <option value="SELL">Sell</option>
+            </select>
+            <select
+              value={filters.status}
+              onChange={(event) =>
+                setFilters((prev) => ({ ...prev, status: event.target.value }))
+              }
+              className="w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+            >
+              <option value="">All statuses</option>
+              <option value="PENDING_REVIEW">Pending</option>
+              <option value="REJECTED">Rejected</option>
+              <option value="EXECUTED">Executed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+            <input
+              value={filters.user}
+              onChange={(event) =>
+                setFilters((prev) => ({ ...prev, user: event.target.value }))
+              }
+              placeholder="User ID"
+              className="w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+            />
+          </div>
+
+          <AdminTradeRequestsTable
+            items={items}
+            onExecute={handleExecute}
+            onReject={handleReject}
+          />
+        </div>
+      </AppShell>
+    </DashboardShell>
+  );
+}

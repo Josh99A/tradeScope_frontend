@@ -1,32 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AppShell from "@/components/layout/AppShell";
 import DashboardShell from "@/components/layout/DashboardShell";
 import Card from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import ActivityTable from "@/components/wallet/ActivityTable";
 import StatusTable from "@/components/wallet/StatusTable";
+import HoldingsList from "@/components/wallet/HoldingsList";
+import DepositModal from "@/components/deposit/DepositModal";
+import WithdrawalModal, {
+  WithdrawalPayload,
+} from "@/components/withdraw/WithdrawalModal";
+import { HoldingItem } from "@/components/wallet/HoldingsRow";
 import {
-  getWallet,
   depositFunds,
   withdrawFunds,
   getWalletActivity,
   getDeposits,
   getWithdrawals,
+  getHoldings,
 } from "@/lib/wallet";
-import DepositModal from "@/components/deposit/DepositModal";
-
-type WalletData = {
-  balance?: number | string;
-  total_balance?: number | string;
-  available_balance?: number | string;
-  available?: number | string;
-  locked_balance?: number | string;
-  pending_withdrawals?: number | string;
-  pending?: number | string;
-  currency?: string;
-};
+import { getPrices } from "@/lib/prices";
+import { getActiveAssets } from "@/lib/assets";
+import { useRouter } from "next/navigation";
 
 type ActivityItem = {
   id?: number | string;
@@ -38,6 +35,10 @@ type ActivityItem = {
   reference?: string;
   archived?: boolean;
   deleted?: boolean;
+};
+
+type HoldingsResponse = {
+  holdings?: HoldingItem[];
 };
 
 const parseNumber = (value: number | string | undefined) => {
@@ -55,18 +56,75 @@ const normalizeActivity = (data: unknown): ActivityItem[] => {
   return [];
 };
 
+const normalizeHoldings = (data: unknown): HoldingItem[] => {
+  if (!data || typeof data !== "object") return [];
+  const maybe = data as HoldingsResponse;
+  if (!Array.isArray(maybe.holdings)) return [];
+  return maybe.holdings;
+};
+
+const getHoldingRate = (holding: HoldingItem) => {
+  if (holding.usd_rate !== null && holding.usd_rate !== undefined) {
+    const parsed = Number(holding.usd_rate);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }
+  return 0;
+};
+
+const getHoldingValue = (holding: HoldingItem, fallbackRate: number) => {
+  if (holding.usd_value !== null && holding.usd_value !== undefined) {
+    const parsed = Number(holding.usd_value);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  const available = parseNumber(holding.available);
+  const locked = parseNumber(holding.locked);
+  return (available + locked) * fallbackRate;
+};
+
+
 export default function WalletPage() {
-  const [wallet, setWallet] = useState<WalletData | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [deposits, setDeposits] = useState<ActivityItem[]>([]);
   const [withdrawals, setWithdrawals] = useState<ActivityItem[]>([]);
+  const [holdings, setHoldings] = useState<HoldingItem[]>([]);
+  const [assets, setAssets] = useState<any[]>([]);
+  const [assetsError, setAssetsError] = useState<string | null>(null);
+  const [prices, setPrices] = useState<Record<string, number>>({});
+  const [holdingsLoading, setHoldingsLoading] = useState(true);
+  const [pricesLoading, setPricesLoading] = useState(false);
+  const [holdingsError, setHoldingsError] = useState<string | null>(null);
+  const [pricesError, setPricesError] = useState<string | null>(null);
+  const [rateLimited, setRateLimited] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
-  const [withdrawAmount, setWithdrawAmount] = useState("");
   const [submitting, setSubmitting] = useState<
     "deposit" | "withdraw" | null
   >(null);
   const [depositOpen, setDepositOpen] = useState(false);
+  const [depositAssetId, setDepositAssetId] = useState<
+    number | string | null
+  >(null);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawAssetId, setWithdrawAssetId] = useState<
+    number | string | null
+  >(null);
+  const router = useRouter();
+  const cachedPricesRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("ts_prices_cache");
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, number>;
+        if (parsed && typeof parsed === "object") {
+          cachedPricesRef.current = parsed;
+          setPrices((prev) => ({ ...parsed, ...prev }));
+        }
+      }
+    } catch {
+      // ignore cache read errors
+    }
+  }, []);
 
   const getErrorMessage = (error: unknown, fallback: string) => {
     if (typeof error === "object" && error && "response" in error) {
@@ -87,23 +145,51 @@ export default function WalletPage() {
 
   const fetchWalletData = async () => {
     setLoading(true);
+    setHoldingsLoading(true);
     setNotice(null);
+    setHoldingsError(null);
+    setAssetsError(null);
+    const assetsPromise = getActiveAssets();
     try {
-      const [walletData, activityData, depositsData, withdrawalsData] =
+      const [activityData, depositsData, withdrawalsData, holdingsData] =
         await Promise.all([
-        getWallet(),
-        getWalletActivity({ includeArchived: true }),
-        getDeposits(),
-        getWithdrawals(),
-      ]);
-      setWallet(walletData);
+          getWalletActivity({ includeArchived: true }),
+          getDeposits(),
+          getWithdrawals(),
+          getHoldings(),
+        ]);
       setActivity(normalizeActivity(activityData));
       setDeposits(normalizeActivity(depositsData));
       setWithdrawals(normalizeActivity(withdrawalsData));
-    } catch (_e) {
+
+      const normalizedHoldings = normalizeHoldings(holdingsData);
+      setHoldings(normalizedHoldings);
+      const derivedRates = normalizedHoldings.reduce<Record<string, number>>(
+        (acc, holding) => {
+          const rate = getHoldingRate(holding);
+          if (rate > 0) {
+            acc[String(holding.asset || "").toUpperCase()] = rate;
+          }
+          return acc;
+        },
+        {}
+      );
+      if (Object.keys(derivedRates).length > 0) {
+        setPrices((prev) => ({ ...derivedRates, ...prev }));
+      }
+    } catch {
       setNotice("Unable to load wallet data.");
+      setHoldingsError("Unable to load holdings.");
     } finally {
       setLoading(false);
+      setHoldingsLoading(false);
+    }
+
+    try {
+      const assetData = await assetsPromise;
+      setAssets(normalizeActivity(assetData));
+    } catch {
+      setAssetsError("Unable to load assets.");
     }
   };
 
@@ -111,67 +197,124 @@ export default function WalletPage() {
     fetchWalletData();
   }, []);
 
-  const currency = wallet?.currency || "USD";
-  const formatCurrency = (value: number) => {
+  const fetchPricesForSymbols = async (symbols: string[]) => {
+    const uniqueSymbols = Array.from(
+      new Set(symbols.map((symbol) => symbol.toUpperCase()).filter(Boolean))
+    );
+    const missing = uniqueSymbols.filter((symbol) => !prices[symbol]);
+    if (missing.length === 0) return;
+    setPricesLoading(true);
+    setPricesError(null);
     try {
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency,
-      }).format(value);
+      const data = await getPrices(missing);
+      const nextPrices = data?.prices || {};
+      setPrices((prev) => ({ ...prev, ...nextPrices }));
+      setRateLimited(Boolean(data?.rate_limited));
+      if (Object.keys(nextPrices).length > 0) {
+        cachedPricesRef.current = {
+          ...cachedPricesRef.current,
+          ...nextPrices,
+        };
+        try {
+          window.localStorage.setItem(
+            "ts_prices_cache",
+            JSON.stringify(cachedPricesRef.current)
+          );
+        } catch {
+          // ignore cache write errors
+        }
+      }
     } catch {
-      return `${value.toLocaleString()} ${currency}`;
+      setPricesError("Unable to load live prices.");
+      setRateLimited(false);
+      if (Object.keys(cachedPricesRef.current).length > 0) {
+        setPrices((prev) => ({ ...cachedPricesRef.current, ...prev }));
+      }
+    } finally {
+      setPricesLoading(false);
     }
   };
 
-  const handleWithdraw = async () => {
-    const amount = parseNumber(withdrawAmount);
+  const totalPortfolioUsd = holdings.reduce((sum, holding) => {
+    const asset = String(holding.asset || "").toUpperCase();
+    const fallbackRate = prices[asset] || getHoldingRate(holding);
+    return sum + getHoldingValue(holding, fallbackRate);
+  }, 0);
+
+  const handleWithdraw = async (payload: WithdrawalPayload) => {
+    const amount = parseNumber(payload.amount);
     if (amount <= 0) {
       setNotice("Enter a valid withdrawal amount.");
       return;
     }
-
     setSubmitting("withdraw");
     setNotice(null);
     try {
-      await withdrawFunds(amount);
-      setWithdrawAmount("");
+      await withdrawFunds({ ...payload, asset_id: payload.assetId, proof: payload.proof || "" });
       setNotice("Withdrawal request submitted.");
+      setWithdrawOpen(false);
       await fetchWalletData();
     } catch (error) {
-      setNotice(
-        getErrorMessage(
-          error,
-          "Withdrawal request failed."
-        )
-      );
+      setNotice(getErrorMessage(error, "Withdrawal request failed."));
     } finally {
       setSubmitting(null);
     }
   };
 
-  const availableBalance = parseNumber(wallet?.available_balance);
-  const lockedBalance = parseNumber(wallet?.locked_balance);
-  const totalBalance = availableBalance + lockedBalance;
-  const pendingAmount = lockedBalance;
   const pendingDeposit = deposits.some(
     (deposit) => String(deposit.status).toUpperCase() === "PENDING_REVIEW"
   );
   const pendingWithdrawal = withdrawals.some((withdrawal) => {
     const status = String(withdrawal.status).toUpperCase();
-    return status === "PENDING_REVIEW" || status === "PROCESSING";
+    return (
+      status === "PENDING" ||
+      status === "PENDING_REVIEW" ||
+      status === "PROCESSING"
+    );
   });
-  const withdrawalOverLimit =
-    parseNumber(withdrawAmount) > 0 &&
-    parseNumber(withdrawAmount) > availableBalance;
+
+  const handleDepositAction = (asset?: string) => {
+    if (asset) {
+      const match = assets.find(
+        (item) =>
+          String(item?.symbol || "").toUpperCase() === asset.toUpperCase()
+      );
+      setDepositAssetId(match?.id ?? null);
+    } else {
+      setDepositAssetId(null);
+    }
+    setDepositOpen(true);
+  };
+
+  const handleWithdrawAction = (asset?: string) => {
+    if (asset) {
+      const match = assets.find(
+        (item) =>
+          String(item?.symbol || "").toUpperCase() === asset.toUpperCase()
+      );
+      setWithdrawAssetId(match?.id ?? null);
+    } else {
+      setWithdrawAssetId(null);
+    }
+    setWithdrawOpen(true);
+  };
+
+  const handleTradeAction = (asset: string) => {
+    if (!asset) return;
+    router.push(`/dashboard/trade?symbol=${asset}USDT&quote=USDT`);
+  };
+
+  const handlePriceRetry = async (asset: string) => {
+    if (!asset) return;
+    await fetchPricesForSymbols([asset]);
+  };
 
   return (
     <DashboardShell>
       <AppShell>
         <div className="space-y-4">
           <div>
-            <h1 className="text-xl font-semibold text-ts-text-main">
-              Wallet
-            </h1>
+            <h1 className="text-xl font-semibold text-ts-text-main">Wallet</h1>
             <p className="text-sm text-ts-text-muted">
               Manage your balance, deposits, and withdrawals.
             </p>
@@ -179,7 +322,7 @@ export default function WalletPage() {
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              onClick={() => setDepositOpen(true)}
+              onClick={() => handleDepositAction()}
               className="bg-ts-primary text-white hover:opacity-90"
             >
               Deposit
@@ -187,96 +330,86 @@ export default function WalletPage() {
           </div>
 
           {notice && (
-            <div className="text-sm text-ts-text-muted">
-              {notice}
-            </div>
+            <div className="text-sm text-ts-text-muted">{notice}</div>
+          )}
+          {assetsError && (
+            <div className="text-sm text-ts-text-muted">{assetsError}</div>
           )}
           {pendingDeposit && (
             <div className="rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-sm text-ts-text-main">
-              You already have a pending deposit request. Please wait for
-              admin confirmation.
+              You already have a pending deposit request. Please wait for admin confirmation.
             </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
               <p className="text-xs uppercase tracking-wide text-ts-text-muted">
-                Available balance
+                Total available (USD estimate)
               </p>
               <div className="mt-2 text-2xl font-semibold text-ts-text-main">
-                {formatCurrency(availableBalance)}
+                {totalPortfolioUsd
+                  ? new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                    }).format(totalPortfolioUsd)
+                  : "--"}
               </div>
-              <div className="mt-4 space-y-1 text-xs text-ts-text-muted">
-                <p>
-                  Total: {formatCurrency(totalBalance)}
-                </p>
-                <p>
-                  Locked: {formatCurrency(pendingAmount)}
-                </p>
+              <p className="mt-4 text-xs text-ts-text-muted">
+                Based on cached crypto price estimates.
+              </p>
+            </Card>
+
+            <Card>
+              <p className="text-xs uppercase tracking-wide text-ts-text-muted">
+                Holdings count
+              </p>
+              <div className="mt-2 text-2xl font-semibold text-ts-text-main">
+                {holdings.length ? holdings.length.toLocaleString() : "--"}
               </div>
+              <p className="mt-4 text-xs text-ts-text-muted">
+                Active crypto assets with balances.
+              </p>
             </Card>
 
             <Card>
               <h2 className="text-sm font-semibold text-ts-text-main">
-                Request withdrawal
+                Withdrawals
               </h2>
               <p className="text-xs text-ts-text-muted">
                 Submit a withdrawal request for review.
               </p>
               {pendingDeposit && (
                 <div className="mt-3 rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-xs text-ts-text-main">
-                  You have a pending deposit request. Withdrawals are
-                  processed within 24 hours. Do not submit multiple requests.
+                  You have a pending deposit request. Withdrawals are processed within 24 hours. Do not submit multiple requests.
                 </div>
               )}
               {pendingWithdrawal && (
                 <div className="mt-3 rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-xs text-ts-text-main">
-                  Your withdrawal request is pending and will be processed
-                  within 24 hours.
+                  Your withdrawal request is pending and will be processed within 24 hours.
                 </div>
               )}
-              <div className="mt-4 space-y-3">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  placeholder={`Amount (${currency})`}
-                  className="w-full rounded-md bg-ts-input-bg border border-ts-input-border px-3 py-2 text-sm focus:outline-none"
-                  aria-invalid={withdrawalOverLimit}
-                  aria-describedby="withdrawal-help"
-                />
-                <p
-                  id="withdrawal-help"
-                  className={`text-xs ${
-                    withdrawalOverLimit
-                      ? "text-ts-danger"
-                      : "text-ts-text-muted"
-                  }`}
-                >
-                  {withdrawalOverLimit
-                    ? "Amount exceeds your available balance."
-                    : "Enter the amount you want to withdraw."}
-                </p>
+              <div className="mt-4">
                 <Button
                   type="button"
-                  onClick={handleWithdraw}
-                  disabled={
-                    submitting !== null ||
-                    loading ||
-                    pendingWithdrawal ||
-                    withdrawalOverLimit
-                  }
+                  onClick={() => handleWithdrawAction()}
+                  disabled={submitting !== null || loading || pendingWithdrawal}
                   className="w-full bg-ts-danger text-white hover:opacity-90"
                 >
-                  {submitting === "withdraw"
-                    ? "Processing..."
-                    : "Request withdrawal"}
+                  Request withdrawal
                 </Button>
               </div>
             </Card>
           </div>
+
+          <HoldingsList
+            holdings={holdings}
+            prices={prices}
+            loading={holdingsLoading}
+            error={holdingsError}
+            onDeposit={handleDepositAction}
+            onWithdraw={handleWithdrawAction}
+            onTrade={handleTradeAction}
+          />
 
           <ActivityTable
             items={activity}
@@ -289,11 +422,13 @@ export default function WalletPage() {
               title="Deposits"
               items={deposits}
               emptyLabel="No deposits yet."
+              prices={prices}
             />
             <StatusTable
               title="Withdrawals"
               items={withdrawals}
               emptyLabel="No withdrawals yet."
+              prices={prices}
             />
           </div>
         </div>
@@ -302,27 +437,43 @@ export default function WalletPage() {
       <DepositModal
         open={depositOpen}
         onOpenChange={setDepositOpen}
+        initialAssetId={depositAssetId}
+        assets={assets}
+        prices={prices}
+        pricesLoading={pricesLoading}
+        pricesError={pricesError}
+        rateLimited={rateLimited}
+        onRetryPrice={handlePriceRetry}
         locked={pendingDeposit}
         lockMessage="You already have a pending deposit request. Please wait for admin confirmation."
-        onConfirm={async ({ asset, amount, address }) => {
+        onConfirm={async ({ assetId, amount }) => {
           setSubmitting("deposit");
           setNotice(null);
           try {
-            await depositFunds({ amount, asset, address });
+            await depositFunds({ amount, asset_id: assetId });
             setDepositOpen(false);
             setNotice("Deposit request submitted.");
             await fetchWalletData();
           } catch (error) {
-            setNotice(
-              getErrorMessage(
-                error,
-                "Deposit request failed."
-              )
-            );
+            setNotice(getErrorMessage(error, "Deposit request failed."));
           } finally {
             setSubmitting(null);
           }
         }}
+      />
+      <WithdrawalModal
+        open={withdrawOpen}
+        onOpenChange={setWithdrawOpen}
+        onConfirm={handleWithdraw}
+        initialAssetId={withdrawAssetId}
+        assets={assets}
+        prices={prices}
+        pricesLoading={pricesLoading}
+        pricesError={pricesError}
+        rateLimited={rateLimited}
+        onRetryPrice={handlePriceRetry}
+        locked={pendingWithdrawal}
+        lockMessage="You already have a pending withdrawal request. Please wait for admin processing."
       />
     </DashboardShell>
   );

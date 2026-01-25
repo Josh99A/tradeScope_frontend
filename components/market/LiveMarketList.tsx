@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getMarkets } from "@/lib/markets";
+import AssetIcon from "@/components/ui/AssetIcon";
 
 type MarketItem = {
   id: string;
@@ -51,12 +52,10 @@ export default function LiveMarketList({ limit = 5 }: { limit?: number }) {
               className="flex justify-between items-center rounded-md px-2 py-1 hover:bg-ts-hover"
             >
               <div className="flex items-center gap-2">
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="h-6 w-6 rounded-full"
-                />
-                <span className="text-sm font-medium">{item.symbol}</span>
+                <AssetIcon symbol={item.symbol} size={24} />
+                <span className="sr-only">
+                  {item.name} ({item.symbol})
+                </span>
               </div>
               <div className="text-right">
                 <p className="text-sm">{formatPrice(item.price)}</p>

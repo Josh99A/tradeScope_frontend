@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getMarkets } from "@/lib/markets";
+import AssetIcon from "@/components/ui/AssetIcon";
 
 type MarketItem = {
   id: string;
@@ -62,15 +63,10 @@ export default function LiveMarketHero() {
               className="flex items-center justify-between rounded-lg border border-ts-border bg-ts-bg-main px-4 py-3 hover:border-ts-primary/60 hover:bg-ts-hover"
             >
               <div className="flex items-center gap-3">
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="h-8 w-8 rounded-full"
-                />
-                <div>
-                  <p className="text-sm font-semibold">{item.symbol}</p>
-                  <p className="text-xs text-ts-text-muted">{item.name}</p>
-                </div>
+                <AssetIcon symbol={item.symbol} size={32} />
+                <span className="sr-only">
+                  {item.name} ({item.symbol})
+                </span>
               </div>
               <div className="text-right">
                 <p className="text-sm font-semibold">

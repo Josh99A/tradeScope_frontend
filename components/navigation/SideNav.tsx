@@ -13,7 +13,7 @@ export default function SideNav() {
 
   const navItems = NAV_ITEMS.map((group) => {
     const items = group.items.filter((item) => {
-      if (item.href === "/admin") {
+      if (item.href.startsWith("/admin")) {
         return isAdmin;
       }
       return true;

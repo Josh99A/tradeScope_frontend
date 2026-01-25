@@ -49,11 +49,16 @@ export default function HistoryPage() {
   const [activity, setActivity] = useState<ActivityLogItem[]>([]);
   const [deposits, setDeposits] = useState<StatusItem[]>([]);
   const [withdrawals, setWithdrawals] = useState<StatusItem[]>([]);
+  const [prices, setPrices] = useState<Record<string, number>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [activityTab, setActivityTab] = useState<"all" | "archived">("all");
   const pendingWithdrawal = withdrawals.some((withdrawal) => {
     const status = String(withdrawal.status).toUpperCase();
-    return status === "PENDING_REVIEW" || status === "PROCESSING";
+    return (
+      status === "PENDING" ||
+      status === "PENDING_REVIEW" ||
+      status === "PROCESSING"
+    );
   });
 
   const loadActivity = async () => {
@@ -75,6 +80,20 @@ export default function HistoryPage() {
 
   useEffect(() => {
     loadActivity();
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("ts_prices_cache");
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, number>;
+        if (parsed && typeof parsed === "object") {
+          setPrices(parsed);
+        }
+      }
+    } catch {
+      // ignore cache read errors
+    }
   }, []);
 
   return (
@@ -136,16 +155,22 @@ export default function HistoryPage() {
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <StatusTable
-              title="Deposit history"
-              items={deposits}
-              emptyLabel="No deposits recorded."
-            />
-            <StatusTable
-              title="Withdrawal history"
-              items={withdrawals}
-              emptyLabel="No withdrawals recorded."
-            />
+            <div id="deposits" className="scroll-mt-20">
+              <StatusTable
+                title="Deposit history"
+                items={deposits}
+                emptyLabel="No deposits recorded."
+                prices={prices}
+              />
+            </div>
+            <div id="withdrawals" className="scroll-mt-20">
+              <StatusTable
+                title="Withdrawal history"
+                items={withdrawals}
+                emptyLabel="No withdrawals recorded."
+                prices={prices}
+              />
+            </div>
           </div>
           {pendingWithdrawal && (
             <div className="rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-sm text-ts-text-main">

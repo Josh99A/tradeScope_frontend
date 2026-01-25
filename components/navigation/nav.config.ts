@@ -27,6 +27,8 @@ export const NAV_ITEMS = [
       { label: "Wallet", href: "/wallet", icon: Wallet },
       { label: "Settings", href: "/settings", icon: Settings },
       { label: "Admin", href: "/admin", icon: ShieldCheck },
+      { label: "Admin Assets", href: "/admin/assets", icon: ShieldCheck },
+      { label: "Admin Trades", href: "/admin/trades", icon: ShieldCheck },
     ],
   },
 ];
