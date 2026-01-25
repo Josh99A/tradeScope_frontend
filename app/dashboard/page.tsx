@@ -1,6 +1,6 @@
 import React from "react";
 import AppShell from "@/components/layout/AppShell";
-import WalletSummary from "@/components/dashboard/WalletSummary";
+import WalletCards from "@/components/dashboard/WalletCards";
 import MarketTable from "@/components/dashboard/MarketTable";
 import WelcomePanel from "@/components/dashboard/WelcomePanel";
 import RecentActivity from "@/components/dashboard/RecentActivity";
@@ -13,7 +13,7 @@ const Dashboard = () => {
     <AppShell>
       <div className="space-y-4">
         <WelcomePanel />
-        <WalletSummary />
+        <WalletCards />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 space-y-4">
@@ -29,7 +29,7 @@ const Dashboard = () => {
         </div>
       </div>
     </AppShell>
-  )
+  );
 }
 
 export default Dashboard

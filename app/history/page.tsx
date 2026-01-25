@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/layout/AppShell";
 import DashboardShell from "@/components/layout/DashboardShell";
 import ActivityLogTable from "@/components/activity/ActivityLogTable";
+import TradeHistoryTable from "@/components/activity/TradeHistoryTable";
 import StatusTable from "@/components/wallet/StatusTable";
 import { getDeposits, getWithdrawals } from "@/lib/wallet";
 import { getActivity } from "@/lib/activity";
+import { getTrades } from "@/lib/trades";
 
 type ActivityLogItem = {
   id?: number | string;
@@ -22,6 +24,16 @@ type StatusItem = {
   amount?: number | string;
   status?: string;
   created_at?: string;
+};
+
+type TradeItem = {
+  id?: number | string;
+  symbol?: string;
+  volume?: number | string;
+  pnl?: number | string;
+  status?: string;
+  opened_at?: string;
+  closed_at?: string;
 };
 
 const normalizeActivity = (data: unknown): ActivityLogItem[] => {
@@ -45,10 +57,20 @@ const normalizeStatus = (data: unknown): StatusItem[] => {
   return [];
 };
 
+const normalizeTrades = (data: unknown): TradeItem[] => {
+  if (Array.isArray(data)) return data as TradeItem[];
+  if (data && typeof data === "object") {
+    const maybe = data as { results?: TradeItem[]; items?: TradeItem[] };
+    return maybe.results || maybe.items || [];
+  }
+  return [];
+};
+
 export default function HistoryPage() {
   const [activity, setActivity] = useState<ActivityLogItem[]>([]);
   const [deposits, setDeposits] = useState<StatusItem[]>([]);
   const [withdrawals, setWithdrawals] = useState<StatusItem[]>([]);
+  const [trades, setTrades] = useState<TradeItem[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [activityTab, setActivityTab] = useState<"all" | "archived">("all");
@@ -64,15 +86,17 @@ export default function HistoryPage() {
   const loadActivity = async () => {
     setNotice(null);
     try {
-      const [activityData, depositsData, withdrawalsData] =
+      const [activityData, depositsData, withdrawalsData, tradesData] =
         await Promise.all([
           getActivity({ includeArchived: true }),
           getDeposits(),
           getWithdrawals(),
+          getTrades(),
         ]);
       setActivity(normalizeActivity(activityData));
       setDeposits(normalizeStatus(depositsData));
       setWithdrawals(normalizeStatus(withdrawalsData));
+      setTrades(normalizeTrades(tradesData));
     } catch (_e) {
       setNotice("Unable to load activity history.");
     }
@@ -172,6 +196,7 @@ export default function HistoryPage() {
               />
             </div>
           </div>
+          <TradeHistoryTable items={trades} />
           {pendingWithdrawal && (
             <div className="rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-sm text-ts-text-main">
               Your withdrawal request is pending and will be processed

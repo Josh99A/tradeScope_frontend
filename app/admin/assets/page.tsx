@@ -13,7 +13,6 @@ import {
   getAdminAssets,
   createAdminAsset,
   updateAdminAsset,
-  deleteAdminAsset,
 } from "@/lib/admin";
 
 type AssetItem = {
@@ -23,6 +22,7 @@ type AssetItem = {
   network: string;
   is_active: boolean;
   icon?: string | null;
+  coincap_id?: string | null;
   deposit_address: string;
   deposit_qr_code: string;
   min_deposit: number | string;
@@ -68,6 +68,7 @@ export default function AdminAssetsPage() {
     network: "",
     is_active: true,
     icon: null as File | null,
+    coincap_id: "",
     deposit_address: "",
     deposit_qr_code: null as File | null,
     min_deposit: "",
@@ -89,6 +90,26 @@ export default function AdminAssetsPage() {
     { name: "XRP", symbol: "XRP", network: "XRP" },
     { name: "Cardano", symbol: "ADA", network: "ADA" },
   ];
+
+  const coincapIdHints: Record<string, string> = {
+    BTC: "bitcoin",
+    ETH: "ethereum",
+    SOL: "solana",
+    XRP: "xrp",
+    ADA: "cardano",
+    DOGE: "dogecoin",
+    LTC: "litecoin",
+    BNB: "binance-coin",
+    TRX: "tron",
+    DOT: "polkadot",
+    AVAX: "avalanche",
+    MATIC: "polygon",
+    LINK: "chainlink",
+    ATOM: "cosmos",
+    BCH: "bitcoin-cash",
+    USDT: "tether",
+    USDC: "usd-coin",
+  };
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -141,6 +162,7 @@ export default function AdminAssetsPage() {
       network: "",
       is_active: true,
       icon: null,
+      coincap_id: "",
       deposit_address: "",
       deposit_qr_code: null,
       min_deposit: "",
@@ -158,6 +180,7 @@ export default function AdminAssetsPage() {
       network: asset.network,
       is_active: asset.is_active,
       icon: null,
+      coincap_id: asset.coincap_id || "",
       deposit_address: asset.deposit_address,
       deposit_qr_code: null,
       min_deposit: String(asset.min_deposit),
@@ -195,6 +218,9 @@ export default function AdminAssetsPage() {
     body.append("symbol", form.symbol.toUpperCase());
     body.append("network", form.network);
     body.append("is_active", String(form.is_active));
+    if (form.coincap_id) {
+      body.append("coincap_id", form.coincap_id);
+    }
     body.append("deposit_address", form.deposit_address);
     body.append("min_deposit", form.min_deposit);
     body.append("min_withdraw", form.min_withdraw);
@@ -216,19 +242,6 @@ export default function AdminAssetsPage() {
       await loadAssets();
     } catch {
       setNotice("Unable to save asset.");
-    }
-  };
-
-  const handleDelete = async (asset: AssetItem) => {
-    const ok = window.confirm(
-      `Delete ${asset.symbol} ${asset.network}? This cannot be undone.`
-    );
-    if (!ok) return;
-    try {
-      await deleteAdminAsset(asset.id);
-      await loadAssets();
-    } catch {
-      setNotice("Unable to delete asset.");
     }
   };
 
@@ -367,16 +380,13 @@ export default function AdminAssetsPage() {
                             <Button
                               type="button"
                               onClick={() => toggleActive(asset)}
-                              className="bg-ts-primary text-white hover:opacity-90"
+                              className={
+                                asset.is_active
+                                  ? "bg-ts-danger text-white hover:opacity-90"
+                                  : "bg-ts-success text-white hover:opacity-90"
+                              }
                             >
-                              {asset.is_active ? "Deactivate" : "Activate"}
-                            </Button>
-                            <Button
-                              type="button"
-                              onClick={() => handleDelete(asset)}
-                              className="bg-ts-danger text-white hover:opacity-90"
-                            >
-                              Delete
+                              {asset.is_active ? "Deactivate asset" : "Activate asset"}
                             </Button>
                           </div>
                         </td>
@@ -445,16 +455,13 @@ export default function AdminAssetsPage() {
                         <Button
                           type="button"
                           onClick={() => toggleActive(asset)}
-                          className="bg-ts-primary text-white hover:opacity-90"
+                          className={
+                            asset.is_active
+                              ? "bg-ts-danger text-white hover:opacity-90"
+                              : "bg-ts-success text-white hover:opacity-90"
+                          }
                         >
-                          {asset.is_active ? "Deactivate" : "Activate"}
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={() => handleDelete(asset)}
-                          className="bg-ts-danger text-white hover:opacity-90"
-                        >
-                          Delete
+                          {asset.is_active ? "Deactivate asset" : "Activate asset"}
                         </Button>
                       </div>
                     </div>
@@ -492,20 +499,22 @@ export default function AdminAssetsPage() {
                     Common presets
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {presets.map((preset) => (
-                      <Button
-                        key={`${preset.symbol}-${preset.network}`}
-                        type="button"
-                        onClick={() =>
-                          setForm((prev) => ({
-                            ...prev,
-                            name: preset.name,
-                            symbol: preset.symbol,
-                            network: preset.network,
-                          }))
-                        }
-                        className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
-                      >
+                {presets.map((preset) => (
+                  <Button
+                    key={`${preset.symbol}-${preset.network}`}
+                    type="button"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        name: preset.name,
+                        symbol: preset.symbol,
+                        network: preset.network,
+                        coincap_id:
+                          coincapIdHints[preset.symbol.toUpperCase()] || "",
+                      }))
+                    }
+                    className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
+                  >
                         <AssetIcon symbol={preset.symbol} size={20} />
                         <span className="sr-only">{preset.symbol}</span>
                       </Button>
@@ -534,10 +543,17 @@ export default function AdminAssetsPage() {
                     id="asset-symbol"
                     value={form.symbol}
                     onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        symbol: event.target.value.toUpperCase(),
-                      }))
+                      setForm((prev) => {
+                        const nextSymbol = event.target.value.toUpperCase();
+                        return {
+                          ...prev,
+                          symbol: nextSymbol,
+                          coincap_id:
+                            prev.coincap_id ||
+                            coincapIdHints[nextSymbol] ||
+                            "",
+                        };
+                      })
                     }
                     placeholder="e.g. USDT"
                     className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
@@ -575,6 +591,23 @@ export default function AdminAssetsPage() {
                     <option value="true">Active</option>
                     <option value="false">Inactive</option>
                   </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="asset-coincap" className="text-xs text-ts-text-muted">
+                    CoinCap ID (auto-filled)
+                  </label>
+                  <input
+                    id="asset-coincap"
+                    value={form.coincap_id}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, coincap_id: event.target.value }))
+                    }
+                    placeholder="e.g. bitcoin"
+                    className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+                  />
+                  <p className="mt-1 text-xs text-ts-text-muted">
+                    Used to fetch live USD rates from CoinCap.
+                  </p>
                 </div>
                 <div className="sm:col-span-2">
                   <label htmlFor="asset-icon" className="text-xs text-ts-text-muted">

@@ -9,6 +9,34 @@ import { registerUser, loginUser } from "@/lib/auth";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 
+const getPasswordScore = (value: string) => {
+  const checks = [
+    value.length >= 8,
+    /[a-z]/.test(value),
+    /[A-Z]/.test(value),
+    /\d/.test(value),
+    /[^A-Za-z0-9]/.test(value),
+  ];
+  return checks.filter(Boolean).length;
+};
+
+const getPasswordMeta = (value: string) => {
+  const score = getPasswordScore(value);
+  if (!value) {
+    return { label: "Enter a password", color: "text-ts-text-muted", bar: "bg-ts-border", score };
+  }
+  if (score <= 2) {
+    return { label: "Weak", color: "text-ts-danger", bar: "bg-ts-danger", score };
+  }
+  if (score === 3) {
+    return { label: "Fair", color: "text-ts-warning", bar: "bg-ts-warning", score };
+  }
+  if (score === 4) {
+    return { label: "Good", color: "text-ts-primary", bar: "bg-ts-primary", score };
+  }
+  return { label: "Strong", color: "text-ts-success", bar: "bg-ts-success", score };
+};
+
 const Page = () => {
   const router = useRouter();
   const { refreshUser } = useAuth();
@@ -20,6 +48,7 @@ const Page = () => {
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const passwordMeta = getPasswordMeta(password);
 
   useEffect(() => {
     if (!profilePhoto) {
@@ -131,10 +160,26 @@ const Page = () => {
           <FormField
             label="Password"
             type="password"
-            placeholder="Minimum 8 characters"
+            placeholder="At least 8 chars, upper/lower/number/symbol"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-ts-text-muted">Password strength</span>
+              <span className={passwordMeta.color}>{passwordMeta.label}</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-ts-border">
+              <div
+                className={`h-2 rounded-full transition-all ${passwordMeta.bar}`}
+                style={{ width: `${(passwordMeta.score / 5) * 100}%` }}
+              />
+            </div>
+            <p className="text-xs text-ts-text-muted">
+              Use at least 8 characters with upper/lowercase letters, a number,
+              and a symbol.
+            </p>
+          </div>
 
           <FormField
             label="Confirm Password"

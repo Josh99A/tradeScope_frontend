@@ -84,7 +84,7 @@ const HomePage = () => {
             <StepCard
               step="03"
               title="Trade & Track"
-              description="Analyze charts and manage positions in real time."
+              description="Analyze charts and track trades in real time."
             />
           </div>
         </div>

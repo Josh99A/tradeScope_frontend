@@ -28,7 +28,6 @@ export default function DashboardShell({
     <div className="min-h-screen bg-ts-bg-main">
       <DashboardTopBar onMenuClick={() => setDrawerOpen(true)} />
       <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-
       <main className="pt-16 pb-20 md:pb-6 px-4">{children}</main>
 
       <MobileBottomNav />

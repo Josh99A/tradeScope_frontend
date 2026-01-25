@@ -15,6 +15,7 @@ import {
   restoreAdminActivity,
   deleteAdminActivity,
 } from "@/lib/activity";
+import { getAdminPendingSummary } from "@/lib/admin";
 import { cn } from "@/lib/utils";
 
 type ActivityItem = {
@@ -112,6 +113,7 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [pendingTotal, setPendingTotal] = useState(0);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const hasLoadedRef = useRef(false);
   const lastIdsRef = useRef<Set<string>>(new Set());
@@ -125,6 +127,45 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
     setError(null);
     try {
       if (isAdmin) {
+        const pendingCacheKey = "ts_admin_pending_summary";
+        const pendingCacheTtlMs = 60_000;
+        const readPendingCache = () => {
+          try {
+            const raw = window.localStorage.getItem(pendingCacheKey);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw) as { value: number; ts: number };
+            if (!parsed || typeof parsed.ts !== "number") return null;
+            if (Date.now() - parsed.ts > pendingCacheTtlMs) return null;
+            return parsed.value ?? null;
+          } catch {
+            return null;
+          }
+        };
+        const writePendingCache = (value: number) => {
+          try {
+            window.localStorage.setItem(
+              pendingCacheKey,
+              JSON.stringify({ value, ts: Date.now() })
+            );
+          } catch {
+            // ignore cache write errors
+          }
+        };
+
+        const cachedPending = readPendingCache();
+        if (typeof cachedPending === "number") {
+          setPendingTotal(cachedPending);
+        } else {
+          try {
+            const pending = await getAdminPendingSummary();
+            const nextTotal = Number(pending?.total_pending) || 0;
+            setPendingTotal(nextTotal);
+            writePendingCache(nextTotal);
+          } catch {
+            setPendingTotal(0);
+          }
+        }
+
         const data = await getAdminActivity({ includeArchived: true });
         const list = normalizeList<ActivityItem>(data);
         const relevant = list.filter((item) =>
@@ -295,6 +336,11 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 h-5 min-w-[20px] rounded-full bg-ts-danger px-1 text-[10px] font-semibold leading-5 text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
+        {isAdmin && pendingTotal > 0 && (
+          <span className="absolute -bottom-1 -right-1 h-5 min-w-[20px] rounded-full bg-ts-warning px-1 text-[10px] font-semibold leading-5 text-ts-text-main">
+            {pendingTotal > 99 ? "99+" : pendingTotal}
           </span>
         )}
       </Button>

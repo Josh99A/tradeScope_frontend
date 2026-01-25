@@ -32,7 +32,7 @@ const MobileDrawer = ({
       />
 
       {/* Drawer */}
-      <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-ts-bg-card border-r border-ts-border md:hidden flex flex-col animate-slide-in">
+      <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-ts-bg-card border-r border-ts-border md:hidden flex flex-col animate-slide-in pb-16">
         
         {/* Header / Logo */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-ts-border">
@@ -72,7 +72,10 @@ const MobileDrawer = ({
 
         {/* Footer */}
         <div className="px-4 py-4 border-t border-ts-border">
-          <ThemeToggle />
+          <div className="flex items-center justify-between rounded-lg border border-ts-border bg-ts-bg-main px-3 py-2">
+            <span className="text-xs uppercase text-ts-text-muted">Theme</span>
+            <ThemeToggle size="sm" />
+          </div>
         </div>
       </aside>
     </>
