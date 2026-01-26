@@ -10,6 +10,7 @@ type FormFieldProps = {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   allowToggle?: boolean;
+  required?: boolean;
 };
 
 const FormField = ({
@@ -19,6 +20,7 @@ const FormField = ({
   value,
   onChange,
   allowToggle = false,
+  required = false,
 }: FormFieldProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password" && allowToggle;
@@ -26,13 +28,14 @@ const FormField = ({
 
   return (
     <div>
-      <label className="block text-sm mb-1">{label}</label>
+      <label className="block text-sm mb-1">{label}{required && <span className="text-ts-danger"> *</span>}</label>
       <div className="relative">
         <input
           type={inputType}
           placeholder={placeholder}
           value={value}
           onChange={onChange}
+          required={required}
           className="
             w-full rounded-lg px-4 py-3 text-sm
             bg-ts-bg-main border border-ts-border

@@ -1,6 +1,6 @@
 "use client";
 
-import { Maximize2, Minimize2, Search, ArrowLeft } from "lucide-react";
+import { Maximize2, Minimize2, Search, ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
@@ -136,6 +136,7 @@ export default function TradeChart() {
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
   const [tradeNotice, setTradeNotice] = useState<string | null>(null);
+  const [tradeSubmitting, setTradeSubmitting] = useState(false);
   const [requests, setRequests] = useState<TradeRequestItem[]>([]);
   const cachedPricesRef = useRef<Record<string, number>>({});
   const cachedPriceMetaRef = useRef<Record<string, number>>({});
@@ -478,6 +479,7 @@ export default function TradeChart() {
     (side === "buy" ? numericAsset >= minBuy : numericAsset >= minSell);
 
   const handleTradeSubmit = async () => {
+    if (tradeSubmitting) return;
     if (!selectedAsset) return;
     setTradeNotice(null);
     if (!canSubmit) {
@@ -486,6 +488,7 @@ export default function TradeChart() {
       toast.error(message);
       return;
     }
+    setTradeSubmitting(true);
     try {
       await createTradeRequest({
         asset_id: selectedAsset.id,
@@ -510,6 +513,8 @@ export default function TradeChart() {
           : "Unable to submit trade request.";
       setTradeNotice(message);
       toast.error(message);
+    } finally {
+      setTradeSubmitting(false);
     }
   };
 
@@ -659,7 +664,7 @@ export default function TradeChart() {
           {selectedAsset && (
             <section>
               <label className="text-xs uppercase tracking-wide text-ts-text-muted">
-                Network
+                Network <span className="text-ts-danger">*</span>
               </label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {networksForSymbol.map((item) => {
@@ -706,10 +711,11 @@ export default function TradeChart() {
             </div>
 
             <div>
-              <label className="text-xs text-ts-text-muted">Amount (Asset)</label>
+              <label className="text-xs text-ts-text-muted">Amount (Asset) <span className="text-ts-danger">*</span></label>
               <input
                 type="number"
                 value={amountAsset}
+                required
                 onChange={(e) => {
                   setEditingField("asset");
                   setAmountAsset(e.target.value);
@@ -743,10 +749,11 @@ export default function TradeChart() {
             </div>
 
             <div>
-              <label className="text-xs text-ts-text-muted">Amount (USD)</label>
+              <label className="text-xs text-ts-text-muted">Amount (USD) <span className="text-ts-danger">*</span></label>
               <input
                 type="number"
                 value={amountUsd}
+                required
                 onChange={(e) => {
                   setEditingField("usd");
                   setAmountUsd(e.target.value);
@@ -790,16 +797,23 @@ export default function TradeChart() {
           <Button
             type="button"
             onClick={handleTradeSubmit}
-            disabled={!canSubmit}
+            disabled={!canSubmit || tradeSubmitting}
             className={cn(
               "w-full py-3 rounded-lg text-white font-medium transition",
               side === "buy"
                 ? "bg-ts-success hover:opacity-90"
                 : "bg-ts-danger hover:opacity-90",
-              !canSubmit && "opacity-60 cursor-not-allowed"
+              (!canSubmit || tradeSubmitting) && "opacity-60 cursor-not-allowed"
             )}
           >
-            Submit {side.toUpperCase()} request
+            {tradeSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>Submit {side.toUpperCase()} request</>
+            )}
           </Button>
         </div>
       </Card>

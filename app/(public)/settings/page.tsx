@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import toast from "react-hot-toast";
 
 const SettingsPage = () => {
   const { user, isAuthenticated, loading, refreshUser } = useAuth();
@@ -44,7 +45,9 @@ const SettingsPage = () => {
 
     const trimmedUsername = username.trim();
     if (!profilePhoto && !trimmedUsername) {
-      setNotice("Please update your username or profile photo.");
+      const message = "Please update your username or profile photo.";
+      setNotice(message);
+      toast.error(message);
       return;
     }
 
@@ -83,10 +86,12 @@ const SettingsPage = () => {
       await refreshUser();
       setProfilePhoto(null);
       setNotice("Profile updated.");
+      toast.success("Profile updated.");
     } catch (_e) {
       const message =
         _e instanceof Error ? _e.message : "Update failed. Please try again.";
       setNotice(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

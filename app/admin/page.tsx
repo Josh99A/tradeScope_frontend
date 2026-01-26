@@ -7,6 +7,7 @@ import AdminDepositsTable from "@/components/admin/AdminDepositsTable";
 import AdminWithdrawalsTable from "@/components/admin/AdminWithdrawalsTable";
 import AdminUsersTable from "@/components/admin/AdminUsersTable";
 import ActivityLogTable from "@/components/activity/ActivityLogTable";
+import toast from "react-hot-toast";
 import {
   getAdminDeposits,
   getAdminWithdrawals,
@@ -74,6 +75,31 @@ const normalizeList = <T,>(data: unknown): T[] => {
   return [];
 };
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (!error || typeof error !== "object") return fallback;
+  if (
+    "response" in error &&
+    (error as { response?: { data?: any } }).response?.data
+  ) {
+    const data = (error as { response?: { data?: any } }).response?.data;
+    if (typeof data === "string") return data;
+    if (data?.detail) return data.detail;
+    if (typeof data === "object") {
+      const first = Object.values(data)[0];
+      if (Array.isArray(first)) return String(first[0]);
+      if (typeof first === "string") return first;
+    }
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+};
+
+
+const confirmAdminAction = (message: string) => {
+  if (typeof window === "undefined") return false;
+  return window.confirm(message);
+};
+
 export default function AdminDashboardPage() {
   const [deposits, setDeposits] = useState<AdminItem[]>([]);
   const [withdrawals, setWithdrawals] = useState<AdminItem[]>([]);
@@ -81,6 +107,10 @@ export default function AdminDashboardPage() {
   const [activity, setActivity] = useState<AdminActivityItem[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [actionState, setActionState] = useState<{
+    id: number | string | null;
+    action: string | null;
+  }>({ id: null, action: null });
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -121,8 +151,10 @@ export default function AdminDashboardPage() {
       setWithdrawals(normalizeList<AdminItem>(withdrawalData));
       setUsers(normalizeList<AdminUser>(userData));
       setActivity(normalizeList<AdminActivityItem>(activityData));
-    } catch (_e) {
-      setNotice("Admin access required or data unavailable.");
+    } catch (error) {
+      const message = getErrorMessage(error, "Admin access required or data unavailable.");
+      setNotice(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -152,20 +184,28 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const handleAction = async (action: () => Promise<unknown>) => {
+  const handleAction = async (
+    id: number | string,
+    actionKey: string,
+    action: () => Promise<unknown>,
+    confirmMessage: string
+  ) => {
     setNotice(null);
     try {
+      if (actionState.action) return;
+      if (confirmMessage && !confirmAdminAction(confirmMessage)) {
+        return;
+      }
+      setActionState({ id, action: actionKey });
       await action();
       await loadAdminData();
-    } catch (_e) {
-      const message =
-        (typeof _e === "object" &&
-          _e &&
-          "response" in _e &&
-          (_e as { response?: { data?: { detail?: string } } }).response
-            ?.data?.detail) ||
-        "Action failed. Please try again.";
+      toast.success("Action completed successfully.");
+    } catch (error) {
+      const message = getErrorMessage(error, "Action failed. Please try again.");
       setNotice(message);
+      toast.error(message);
+    } finally {
+      setActionState({ id: null, action: null });
     }
   };
 
@@ -217,17 +257,62 @@ export default function AdminDashboardPage() {
           {activeTab === "users" && (
             <AdminUsersTable
               items={users}
-              onDisable={(id) => handleAction(() => disableUser(id))}
-              onEnable={(id) => handleAction(() => enableUser(id))}
-              onDelete={(id) => handleAction(() => deleteUser(id))}
+              onDisable={(id) =>
+                handleAction(
+                  id,
+                  "user-disable",
+                  () => disableUser(id),
+                  "Disable this user? They will not be able to sign in."
+                )
+              }
+              onEnable={(id) =>
+                handleAction(
+                  id,
+                  "user-enable",
+                  () => enableUser(id),
+                  "Enable this user account?"
+                )
+              }
+              onDelete={(id) =>
+                handleAction(
+                  id,
+                  "user-delete",
+                  () => deleteUser(id),
+                  "Delete this user permanently? This cannot be undone."
+                )
+              }
             />
           )}
 
           {activeTab === "deposits" && (
             <AdminDepositsTable
               items={deposits}
-              onConfirm={(id) => handleAction(() => confirmDeposit(id))}
-              onReject={(id) => handleAction(() => rejectDeposit(id))}
+              onConfirm={(id) =>
+                handleAction(
+                  id,
+                  "deposit-confirm",
+                  () => confirmDeposit(id),
+                  "Confirm this deposit request?"
+                )
+              }
+              onReject={(id) =>
+                handleAction(
+                  id,
+                  "deposit-reject",
+                  () => rejectDeposit(id),
+                  "Reject this deposit request?"
+                )
+              }
+              busyId={
+                actionState.action?.startsWith("deposit-") ? actionState.id : null
+              }
+              busyAction={
+                actionState.action === "deposit-confirm"
+                  ? "confirm"
+                  : actionState.action === "deposit-reject"
+                  ? "reject"
+                  : null
+              }
             />
           )}
 
@@ -235,10 +320,43 @@ export default function AdminDashboardPage() {
             <AdminWithdrawalsTable
               items={withdrawals}
               onProcessing={(id) =>
-                handleAction(() => markWithdrawalProcessing(id))
+                handleAction(
+                  id,
+                  "withdrawal-processing",
+                  () => markWithdrawalProcessing(id),
+                  "Mark this withdrawal as processing?"
+                )
               }
-              onPaid={(id) => handleAction(() => markWithdrawalPaid(id))}
-              onReject={(id) => handleAction(() => rejectWithdrawal(id))}
+              onPaid={(id) =>
+                handleAction(
+                  id,
+                  "withdrawal-paid",
+                  () => markWithdrawalPaid(id),
+                  "Mark this withdrawal as paid? This will finalize it."
+                )
+              }
+              onReject={(id) =>
+                handleAction(
+                  id,
+                  "withdrawal-reject",
+                  () => rejectWithdrawal(id),
+                  "Reject this withdrawal request?"
+                )
+              }
+              busyId={
+                actionState.action?.startsWith("withdrawal-")
+                  ? actionState.id
+                  : null
+              }
+              busyAction={
+                actionState.action === "withdrawal-processing"
+                  ? "processing"
+                  : actionState.action === "withdrawal-paid"
+                  ? "paid"
+                  : actionState.action === "withdrawal-reject"
+                  ? "reject"
+                  : null
+              }
             />
           )}
 

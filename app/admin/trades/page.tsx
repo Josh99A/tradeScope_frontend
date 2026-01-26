@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/layout/AppShell";
 import DashboardShell from "@/components/layout/DashboardShell";
 import AdminTradeRequestsTable from "@/components/admin/AdminTradeRequestsTable";
+import toast from "react-hot-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useRouter } from "next/navigation";
 import {
@@ -47,6 +48,25 @@ const normalizeList = <T,>(data: unknown): T[] => {
   return [];
 };
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (!error || typeof error !== "object") return fallback;
+  if (
+    "response" in error &&
+    (error as { response?: { data?: any } }).response?.data
+  ) {
+    const data = (error as { response?: { data?: any } }).response?.data;
+    if (typeof data === "string") return data;
+    if (data?.detail) return data.detail;
+    if (typeof data === "object") {
+      const first = Object.values(data)[0];
+      if (Array.isArray(first)) return String(first[0]);
+      if (typeof first === "string") return first;
+    }
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+};
+
 export default function AdminTradesPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -54,6 +74,10 @@ export default function AdminTradesPage() {
 
   const [items, setItems] = useState<TradeRequestItem[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [actionState, setActionState] = useState<{
+    id: number | string | null;
+    action: "execute" | "reject" | null;
+  }>({ id: null, action: null });
   const [filters, setFilters] = useState({
     status: "",
     symbol: "",
@@ -72,8 +96,10 @@ export default function AdminTradesPage() {
     try {
       const data = await getAdminTradeRequests(filters);
       setItems(normalizeList<TradeRequestItem>(data));
-    } catch {
-      setNotice("Unable to load trade requests.");
+    } catch (error) {
+      const message = getErrorMessage(error, "Unable to load trade requests.");
+      setNotice(message);
+      toast.error(message);
     }
   };
 
@@ -94,34 +120,34 @@ export default function AdminTradesPage() {
   ) => {
     setNotice(null);
     try {
+      if (actionState.action) return;
+      setActionState({ id, action: "execute" });
       await executeTradeRequest(id, payload);
       await loadRequests();
+      toast.success("Trade request executed.");
     } catch (error) {
-      const message =
-        (typeof error === "object" &&
-          error &&
-          "response" in error &&
-          (error as { response?: { data?: { detail?: string } } }).response
-            ?.data?.detail) ||
-        "Action failed. Please try again.";
+      const message = getErrorMessage(error, "Action failed. Please try again.");
       setNotice(message);
+      toast.error(message);
+    } finally {
+      setActionState({ id: null, action: null });
     }
   };
 
   const handleReject = async (id: number | string, reason: string) => {
     setNotice(null);
     try {
+      if (actionState.action) return;
+      setActionState({ id, action: "reject" });
       await rejectTradeRequest(id, reason);
       await loadRequests();
+      toast.success("Trade request rejected.");
     } catch (error) {
-      const message =
-        (typeof error === "object" &&
-          error &&
-          "response" in error &&
-          (error as { response?: { data?: { detail?: string } } }).response
-            ?.data?.detail) ||
-        "Action failed. Please try again.";
+      const message = getErrorMessage(error, "Action failed. Please try again.");
       setNotice(message);
+      toast.error(message);
+    } finally {
+      setActionState({ id: null, action: null });
     }
   };
 
@@ -190,6 +216,8 @@ export default function AdminTradesPage() {
             items={items}
             onExecute={handleExecute}
             onReject={handleReject}
+            busyId={actionState.id}
+            busyAction={actionState.action}
           />
         </div>
       </AppShell>

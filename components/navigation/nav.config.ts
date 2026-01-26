@@ -16,7 +16,7 @@ export const NAV_ITEMS = [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { label: "Markets", href: "/markets", icon: LineChart },
       { label: "Trade", href: "/dashboard/trade", icon: CandlestickChart },
-      { label: "History", href: "/history", icon: History },
+      { label: "Activity logs", href: "/history", icon: History },
     ],
   },
   {

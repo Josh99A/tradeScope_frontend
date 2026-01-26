@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
 import AssetIcon from "@/components/ui/AssetIcon";
 import { formatAmount } from "@/lib/formatters";
+import { Loader2 } from "lucide-react";
 
 type AdminDeposit = {
   id?: number | string;
@@ -36,10 +37,14 @@ export default function AdminDepositsTable({
   items,
   onConfirm,
   onReject,
+  busyId,
+  busyAction,
 }: {
   items: AdminDeposit[];
   onConfirm: (id: number | string) => void;
   onReject: (id: number | string) => void;
+  busyId?: number | string | null;
+  busyAction?: "confirm" | "reject" | null;
 }) {
   const orderedItems = [...items].sort((a, b) => {
     const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -85,28 +90,62 @@ export default function AdminDepositsTable({
                     </td>
                     <td className="py-3">
                       <div className="flex flex-wrap gap-2">
+                        {(() => {
+                          const isBusy =
+                            busyId !== undefined &&
+                            busyId !== null &&
+                            String(busyId) === String(item.id) &&
+                            busyAction === "confirm";
+                          return (
                         <Button
                           type="button"
                           onClick={() => item.id && onConfirm(item.id)}
                           disabled={
                             !item.id ||
+                            isBusy ||
                             String(item.status).toLowerCase() !== "pending_review"
                           }
                           className="bg-ts-success text-white hover:opacity-90"
                         >
-                          Confirm
+                          {isBusy ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            "Confirm"
+                          )}
                         </Button>
+                          );
+                        })()}
+                        {(() => {
+                          const isBusy =
+                            busyId !== undefined &&
+                            busyId !== null &&
+                            String(busyId) === String(item.id) &&
+                            busyAction === "reject";
+                          return (
                         <Button
                           type="button"
                           onClick={() => item.id && onReject(item.id)}
                           disabled={
                             !item.id ||
+                            isBusy ||
                             String(item.status).toLowerCase() !== "pending_review"
                           }
                           className="bg-ts-danger text-white hover:opacity-90"
                         >
-                          Reject
+                          {isBusy ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            "Reject"
+                          )}
                         </Button>
+                          );
+                        })()}
                       </div>
                     </td>
                   </tr>
@@ -139,28 +178,62 @@ export default function AdminDepositsTable({
                   <StatusBadge value={item.status} />
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
+                  {(() => {
+                    const isBusy =
+                      busyId !== undefined &&
+                      busyId !== null &&
+                      String(busyId) === String(item.id) &&
+                      busyAction === "confirm";
+                    return (
                   <Button
                     type="button"
                     onClick={() => item.id && onConfirm(item.id)}
                     disabled={
                       !item.id ||
+                      isBusy ||
                       String(item.status).toLowerCase() !== "pending_review"
                     }
                     className="bg-ts-success text-white hover:opacity-90"
                   >
-                    Confirm
+                    {isBusy ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Confirm"
+                    )}
                   </Button>
+                    );
+                  })()}
+                  {(() => {
+                    const isBusy =
+                      busyId !== undefined &&
+                      busyId !== null &&
+                      String(busyId) === String(item.id) &&
+                      busyAction === "reject";
+                    return (
                   <Button
                     type="button"
                     onClick={() => item.id && onReject(item.id)}
                     disabled={
                       !item.id ||
+                      isBusy ||
                       String(item.status).toLowerCase() !== "pending_review"
                     }
                     className="bg-ts-danger text-white hover:opacity-90"
                   >
-                    Reject
+                    {isBusy ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Reject"
+                    )}
                   </Button>
+                    );
+                  })()}
                 </div>
               </div>
             ))}

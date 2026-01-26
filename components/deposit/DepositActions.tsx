@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export default function DepositActions({
@@ -29,7 +30,14 @@ export default function DepositActions({
         disabled={!canConfirm || loading}
         className="w-full bg-ts-primary text-white hover:opacity-90 sm:w-auto"
       >
-        {loading ? "Processing..." : "Confirm Deposit"}
+        {loading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          "Confirm Deposit"
+        )}
       </Button>
     </div>
   );

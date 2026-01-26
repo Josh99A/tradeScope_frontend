@@ -111,7 +111,7 @@ const Page = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-ts-bg-main px-4">
+    <div className="min-h-screen flex items-center justify-center bg-ts-bg-main px-4 py-10 md:py-16">
       <div className="w-full max-w-md bg-ts-bg-card border border-ts-border rounded-xl p-8">
 
         {/* Header */}
@@ -161,6 +161,7 @@ const Page = () => {
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
           />
 
           <FormField
@@ -170,6 +171,7 @@ const Page = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             allowToggle
+            required
           />
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
@@ -195,6 +197,7 @@ const Page = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             allowToggle
+            required
           />
 
           <Button

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
 import AssetIcon from "@/components/ui/AssetIcon";
 import { formatAmount } from "@/lib/formatters";
+import toast from "react-hot-toast";
+import { Loader2 } from "lucide-react";
 
 type TradeRequestItem = {
   id?: number | string;
@@ -49,6 +51,8 @@ export default function AdminTradeRequestsTable({
   items,
   onExecute,
   onReject,
+  busyId,
+  busyAction,
 }: {
   items: TradeRequestItem[];
   onExecute: (id: number | string, payload: {
@@ -58,6 +62,8 @@ export default function AdminTradeRequestsTable({
     admin_note?: string;
   }) => Promise<void>;
   onReject: (id: number | string, reason: string) => Promise<void>;
+  busyId?: number | string | null;
+  busyAction?: "execute" | "reject" | null;
 }) {
   const [executeOpen, setExecuteOpen] = useState(false);
   const [selected, setSelected] = useState<TradeRequestItem | null>(null);
@@ -89,7 +95,13 @@ export default function AdminTradeRequestsTable({
   const handleReject = async (item: TradeRequestItem) => {
     if (!item.id) return;
     const reason = window.prompt("Reason for rejection?");
-    if (!reason) return;
+    if (!reason) {
+      toast.error("Rejection reason is required.");
+      return;
+    }
+    if (!window.confirm("Reject this trade request?")) {
+      return;
+    }
     await onReject(item.id, reason);
   };
 
@@ -125,7 +137,18 @@ export default function AdminTradeRequestsTable({
                 </tr>
               </thead>
               <tbody className="divide-y divide-ts-border">
-                {orderedItems.map((item, index) => (
+                {orderedItems.map((item, index) => {
+                  const isExecuteBusy =
+                    busyId !== undefined &&
+                    busyId !== null &&
+                    String(busyId) === String(item.id) &&
+                    busyAction === "execute";
+                  const isRejectBusy =
+                    busyId !== undefined &&
+                    busyId !== null &&
+                    String(busyId) === String(item.id) &&
+                    busyAction === "reject";
+                  return (
                   <tr key={item.id ?? index}>
                     <td className="py-3 pr-4">{formatDate(item.created_at)}</td>
                     <td className="py-3 pr-4">{getUserLabel(item.user)}</td>
@@ -148,29 +171,55 @@ export default function AdminTradeRequestsTable({
                         <Button
                           type="button"
                           onClick={() => openExecute(item)}
-                          disabled={String(item.status) !== "PENDING_REVIEW"}
+                          disabled={String(item.status) !== "PENDING_REVIEW" || isExecuteBusy}
                           className="bg-ts-success text-white hover:opacity-90"
                         >
-                          Execute
+                          {isExecuteBusy ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            "Execute"
+                          )}
                         </Button>
                         <Button
                           type="button"
                           onClick={() => handleReject(item)}
-                          disabled={String(item.status) !== "PENDING_REVIEW"}
+                          disabled={String(item.status) !== "PENDING_REVIEW" || isRejectBusy}
                           className="bg-ts-danger text-white hover:opacity-90"
                         >
-                          Reject
+                          {isRejectBusy ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            "Reject"
+                          )}
                         </Button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
           <div className="mt-4 grid gap-3 md:hidden">
-            {orderedItems.map((item, index) => (
+            {orderedItems.map((item, index) => {
+              const isExecuteBusy =
+                busyId !== undefined &&
+                busyId !== null &&
+                String(busyId) === String(item.id) &&
+                busyAction === "execute";
+              const isRejectBusy =
+                busyId !== undefined &&
+                busyId !== null &&
+                String(busyId) === String(item.id) &&
+                busyAction === "reject";
+              return (
               <div
                 key={item.id ?? index}
                 className="rounded-lg border border-ts-border bg-ts-bg-main p-4"
@@ -205,22 +254,37 @@ export default function AdminTradeRequestsTable({
                   <Button
                     type="button"
                     onClick={() => openExecute(item)}
-                    disabled={String(item.status) !== "PENDING_REVIEW"}
+                    disabled={String(item.status) !== "PENDING_REVIEW" || isExecuteBusy}
                     className="bg-ts-success text-white hover:opacity-90"
                   >
-                    Execute
+                    {isExecuteBusy ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Execute"
+                    )}
                   </Button>
                   <Button
                     type="button"
                     onClick={() => handleReject(item)}
-                    disabled={String(item.status) !== "PENDING_REVIEW"}
+                    disabled={String(item.status) !== "PENDING_REVIEW" || isRejectBusy}
                     className="bg-ts-danger text-white hover:opacity-90"
                   >
-                    Reject
+                    {isRejectBusy ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Reject"
+                    )}
                   </Button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
@@ -303,13 +367,36 @@ export default function AdminTradeRequestsTable({
               <Button
                 type="button"
                 onClick={async () => {
+                  if (busyAction === "execute") return;
                   if (!selected.id) return;
+                  if (!form.executed_price || !form.executed_amount_asset || !form.profit_or_loss_usd) {
+                    toast.error("Executed price, amount, and P/L are required.");
+                    return;
+                  }
+                  const price = Number(form.executed_price);
+                  const amount = Number(form.executed_amount_asset);
+                  const pnl = Number(form.profit_or_loss_usd);
+                  if (Number.isNaN(price) || Number.isNaN(amount) || Number.isNaN(pnl)) {
+                    toast.error("Enter valid numeric values for execution fields.");
+                    return;
+                  }
+                  if (!window.confirm("Execute this trade request?")) {
+                    return;
+                  }
                   await onExecute(selected.id, form);
                   setExecuteOpen(false);
                 }}
+                disabled={busyAction === "execute"}
                 className="bg-ts-primary text-white hover:opacity-90"
               >
-                Confirm execution
+                {busyAction === "execute" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Confirm execution"
+                )}
               </Button>
             </div>
           </div>

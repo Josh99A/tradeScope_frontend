@@ -10,8 +10,12 @@ import StatusTable from "@/components/wallet/StatusTable";
 import HoldingsList from "@/components/wallet/HoldingsList";
 import DepositModal from "@/components/deposit/DepositModal";
 import WithdrawalModal, {
-  WithdrawalPayload,
+  WithdrawalPayload as BaseWithdrawalPayload,
 } from "@/components/withdraw/WithdrawalModal";
+
+type WithdrawalPayload = BaseWithdrawalPayload & {
+  network?: string;
+};
 import { HoldingItem } from "@/components/wallet/HoldingsRow";
 import {
   depositFunds,
@@ -24,6 +28,7 @@ import {
 import { getPrices } from "@/lib/prices";
 import { getActiveAssets } from "@/lib/assets";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 type ActivityItem = {
   id?: number | string;
@@ -129,7 +134,11 @@ export default function WalletPage() {
   const getErrorMessage = (error: unknown, fallback: string) => {
     if (typeof error === "object" && error && "response" in error) {
       const data = (error as { response?: { data?: unknown } }).response?.data;
+      console.error("[Withdrawal] API error", data);
       if (data && typeof data === "object") {
+        if ((data as Record<string, unknown>).network) {
+          return "Select a network for this withdrawal.";
+        }
         const detail = (data as { detail?: string }).detail;
         if (detail) return detail;
         const firstKey = Object.keys(data as Record<string, unknown>)[0];
@@ -242,20 +251,33 @@ export default function WalletPage() {
   }, 0);
 
   const handleWithdraw = async (payload: WithdrawalPayload) => {
+    if (submitting) return;
     const amount = parseNumber(payload.amount);
+    console.log("[Withdraw] Payload", payload);
+    if (!payload.network) {
+      const message = "Select a network for this withdrawal.";
+      setNotice(message);
+      toast.error(message);
+      return;
+    }
     if (amount <= 0) {
-      setNotice("Enter a valid withdrawal amount.");
+      const message = "Enter a valid withdrawal amount.";
+      setNotice(message);
+      toast.error(message);
       return;
     }
     setSubmitting("withdraw");
     setNotice(null);
     try {
-      await withdrawFunds({ ...payload, asset_id: payload.assetId, proof: payload.proof || "" });
+      await withdrawFunds({ ...payload, asset_id: payload.assetId, usd_amount: payload.usdAmount, proof: payload.proof || "" });
       setNotice("Withdrawal request submitted.");
+      toast.success("Withdrawal request submitted.");
       setWithdrawOpen(false);
       await fetchWalletData();
     } catch (error) {
-      setNotice(getErrorMessage(error, "Withdrawal request failed."));
+      const message = getErrorMessage(error, "Withdrawal request failed.");
+      setNotice(message);
+      toast.error(message);
     } finally {
       setSubmitting(null);
     }
@@ -446,16 +468,21 @@ export default function WalletPage() {
         onRetryPrice={handlePriceRetry}
         locked={pendingDeposit}
         lockMessage="You already have a pending deposit request. Please wait for admin confirmation."
-        onConfirm={async ({ assetId, amount }) => {
+        loading={submitting === "deposit"}
+        onConfirm={async ({ assetId, amount, usdAmount }) => {
+          if (submitting) return;
           setSubmitting("deposit");
           setNotice(null);
           try {
-            await depositFunds({ amount, asset_id: assetId });
+            await depositFunds({ amount, asset_id: assetId, usd_amount: usdAmount });
             setDepositOpen(false);
             setNotice("Deposit request submitted.");
+            toast.success("Deposit request submitted.");
             await fetchWalletData();
           } catch (error) {
-            setNotice(getErrorMessage(error, "Deposit request failed."));
+            const message = getErrorMessage(error, "Deposit request failed.");
+            setNotice(message);
+            toast.error(message);
           } finally {
             setSubmitting(null);
           }
@@ -474,6 +501,7 @@ export default function WalletPage() {
         onRetryPrice={handlePriceRetry}
         locked={pendingWithdrawal}
         lockMessage="You already have a pending withdrawal request. Please wait for admin processing."
+        loading={submitting === "withdraw"}
       />
     </DashboardShell>
   );

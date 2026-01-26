@@ -7,6 +7,7 @@ import Card from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
 import AssetIcon from "@/components/ui/AssetIcon";
+import toast from "react-hot-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useRouter } from "next/navigation";
 import {
@@ -46,6 +47,26 @@ const normalizeList = <T,>(data: unknown): T[] => {
     return maybe.results || maybe.items || [];
   }
   return [];
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (!error || typeof error !== "object") return fallback;
+  if (
+    "response" in error &&
+    (error as { response?: { data?: any } }).response?.data
+  ) {
+    const data = (error as { response?: { data?: any } }).response?.data;
+    if (typeof data === "string") return data;
+    if (data?.detail) return data.detail;
+    if (typeof data === "object") {
+      const first = Object.values(data)[0];
+      if (Array.isArray(first)) return String(first[0]);
+      if (typeof first === "string") return first;
+    }
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+};
+
 };
 
 export default function AdminAssetsPage() {
@@ -85,6 +106,8 @@ export default function AdminAssetsPage() {
     { name: "Ethereum", symbol: "ETH", network: "ERC20" },
     { name: "Solana", symbol: "SOL", network: "SOLANA" },
     { name: "USD Coin", symbol: "USDC", network: "ERC20" },
+    { name: "USD Coin", symbol: "USDC", network: "SOLANA" },
+    { name: "Tether", symbol: "USDT", network: "ERC20" },
     { name: "Tether", symbol: "USDT", network: "TRC20" },
     { name: "Dogecoin", symbol: "DOGE", network: "DOGE" },
     { name: "XRP", symbol: "XRP", network: "XRP" },
@@ -123,8 +146,10 @@ export default function AdminAssetsPage() {
     try {
       const data = await getAdminAssets();
       setAssets(normalizeList<AssetItem>(data));
-    } catch {
-      setNotice("Unable to load assets.");
+    } catch (error) {
+      const message = getErrorMessage(error, "Unable to load assets.");
+      setNotice(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -193,7 +218,9 @@ export default function AdminAssetsPage() {
   const handleSubmit = async () => {
     setNotice(null);
     if (!form.name || !form.symbol || !form.network) {
-      setNotice("Name, symbol, and network are required.");
+      const message = "Name, symbol, and network are required.";
+      setNotice(message);
+      toast.error(message);
       return;
     }
     if (
@@ -201,15 +228,21 @@ export default function AdminAssetsPage() {
       form.min_withdraw === "" ||
       form.withdraw_fee === ""
     ) {
-      setNotice("Min deposit, min withdraw, and withdraw fee are required.");
+      const message = "Min deposit, min withdraw, and withdraw fee are required.";
+      setNotice(message);
+      toast.error(message);
       return;
     }
     if (form.is_active && !form.deposit_address) {
-      setNotice("Deposit address is required for active assets.");
+      const message = "Deposit address is required for active assets.";
+      setNotice(message);
+      toast.error(message);
       return;
     }
     if (form.is_active && !form.deposit_qr_code && !editing?.deposit_qr_code) {
-      setNotice("Deposit QR code is required for active assets.");
+      const message = "Deposit QR code is required for active assets.";
+      setNotice(message);
+      toast.error(message);
       return;
     }
 
@@ -235,24 +268,35 @@ export default function AdminAssetsPage() {
     try {
       if (editing) {
         await updateAdminAsset(editing.id, body);
+        toast.success("Asset updated.");
       } else {
         await createAdminAsset(body);
+        toast.success("Asset created.");
       }
       setModalOpen(false);
       await loadAssets();
-    } catch {
-      setNotice("Unable to save asset.");
+    } catch (error) {
+      const message = getErrorMessage(error, "Unable to save asset.");
+      setNotice(message);
+      toast.error(message);
     }
   };
 
   const toggleActive = async (asset: AssetItem) => {
+    const actionLabel = asset.is_active ? "deactivate" : "activate";
+    if (!window.confirm(`Are you sure you want to ${actionLabel} ${asset.symbol}?`)) {
+      return;
+    }
     try {
       await updateAdminAsset(asset.id, {
         is_active: !asset.is_active,
       });
       await loadAssets();
-    } catch {
-      setNotice("Unable to update asset status.");
+      toast.success(`Asset ${asset.is_active ? "deactivated" : "activated"}.`);
+    } catch (error) {
+      const message = getErrorMessage(error, "Unable to update asset status.");
+      setNotice(message);
+      toast.error(message);
     }
   };
 

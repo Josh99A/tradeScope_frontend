@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Loader2 } from "lucide-react";
 import AssetIcon from "@/components/ui/AssetIcon";
 
 type AssetItem = {
@@ -30,11 +31,39 @@ const formatTrimmed = (value: number, maxDecimals = 8) => {
   return fixed.replace(/\.?0+$/, "");
 };
 
+const networkOrder = [
+  "TRC20",
+  "ERC20",
+  "BEP20",
+  "SOLANA",
+  "BTC",
+  "ETH",
+  "XRP",
+  "ADA",
+  "DOGE",
+];
+
+const getPreferredAssetForSymbol = (assets: AssetItem[], symbol: string) => {
+  const candidates = assets.filter((item) => item.symbol === symbol);
+  if (candidates.length === 0) return null;
+  const ranked = [...candidates].sort((a, b) => {
+    const aIndex = networkOrder.indexOf(a.network);
+    const bIndex = networkOrder.indexOf(b.network);
+    const aRank = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
+    const bRank = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
+    if (aRank !== bRank) return aRank - bRank;
+    return a.network.localeCompare(b.network);
+  });
+  return ranked[0];
+};
+
 export type WithdrawalPayload = {
   assetId: number | string;
   amount: number;
   fee: number;
   address: string;
+  network: string;
+  usdAmount?: number;
   proof?: File | null;
 };
 
@@ -51,6 +80,7 @@ export default function WithdrawalModal({
   onRetryPrice,
   locked = false,
   lockMessage,
+  loading = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -64,6 +94,7 @@ export default function WithdrawalModal({
   onRetryPrice?: (symbol: string) => void;
   locked?: boolean;
   lockMessage?: string;
+  loading?: boolean;
 }) {
   const [assetId, setAssetId] = useState<number | string | null>(null);
   const [address, setAddress] = useState("");
@@ -94,7 +125,8 @@ export default function WithdrawalModal({
 
   useEffect(() => {
     if (!assetId && activeAssets.length > 0) {
-      setAssetId(activeAssets[0].id);
+      const preferred = getPreferredAssetForSymbol(activeAssets, activeAssets[0].symbol);
+      setAssetId(preferred?.id ?? activeAssets[0].id);
     }
   }, [assetId, activeAssets]);
 
@@ -114,7 +146,8 @@ export default function WithdrawalModal({
     numericAmount > 0 &&
     numericAmount >= minWithdraw &&
     address.trim().length > 0 &&
-    !!selectedAsset;
+    !!selectedAsset &&
+    !!selectedAsset.network;
   const showError = touched && !isValid;
   const priceUnavailable = !priceUsd || Number.isNaN(priceUsd);
 
@@ -242,7 +275,7 @@ export default function WithdrawalModal({
 
           <section>
             <p className="text-xs uppercase tracking-wide text-ts-text-muted">
-              Select asset
+              Select asset <span className="text-ts-danger">*</span>
             </p>
             {activeAssets.length === 0 ? (
               <p className="mt-2 text-sm text-ts-text-muted">
@@ -260,7 +293,10 @@ export default function WithdrawalModal({
                     <button
                       key={symbol}
                       type="button"
-                      onClick={() => setAssetId(asset.id)}
+                      onClick={() => {
+                        const preferred = getPreferredAssetForSymbol(activeAssets, symbol);
+                        setAssetId(preferred?.id ?? asset.id);
+                      }}
                       className={`flex min-w-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs transition sm:text-sm ${
                         isActive
                           ? "border-ts-primary bg-ts-primary/10 text-ts-text-main"
@@ -280,7 +316,7 @@ export default function WithdrawalModal({
           {selectedAsset && (
             <section>
               <label className="text-xs uppercase tracking-wide text-ts-text-muted">
-                Network
+                Network <span className="text-ts-danger">*</span>
               </label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {networksForSymbol.map((item) => {
@@ -347,11 +383,12 @@ export default function WithdrawalModal({
           <section className="space-y-3">
             <div>
               <label className="text-xs uppercase tracking-wide text-ts-text-muted">
-                Destination address
+                Destination address <span className="text-ts-danger">*</span>
               </label>
               <input
                 type="text"
                 value={address}
+                required
                 onChange={(event) => setAddress(event.target.value)}
                 onBlur={() => setTouched(true)}
                 placeholder="Paste wallet address"
@@ -361,13 +398,14 @@ export default function WithdrawalModal({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-xs uppercase tracking-wide text-ts-text-muted">
-                  Amount (Asset)
+                  Amount (Asset) <span className="text-ts-danger">*</span>
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.00000001"
                   value={amount}
+                  required
                   onChange={(event) => {
                     setTouched(true);
                     setEditingField("asset");
@@ -488,22 +526,37 @@ export default function WithdrawalModal({
           <Button
             type="button"
             onClick={() => {
+              if (loading) return;
               if (!isValid || locked || priceUnavailable || !selectedAsset) {
                 setTouched(true);
                 return;
               }
+              if (!selectedAsset.network) {
+                setTouched(true);
+                return;
+              }
+              const numericUsd = parseAmount(usdAmount);
               onConfirm({
                 assetId: selectedAsset.id,
                 amount: numericAmount,
                 fee,
                 address: address.trim(),
+                network: selectedAsset.network,
+                usdAmount: numericUsd > 0 ? numericUsd : undefined,
                 proof,
               });
             }}
-            disabled={!isValid || locked || priceUnavailable || !selectedAsset}
+            disabled={!isValid || locked || priceUnavailable || !selectedAsset || loading}
             className="bg-ts-danger text-white hover:opacity-90"
           >
-            Confirm withdrawal
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              "Confirm withdrawal"
+            )}
           </Button>
         </div>
 

@@ -70,6 +70,7 @@ const Page = () => {
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
           />
 
           <FormField
@@ -79,6 +80,7 @@ const Page = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             allowToggle
+            required
           />
 
           <Button

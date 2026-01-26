@@ -33,6 +33,32 @@ const formatTrimmed = (value: number, maxDecimals = 8) => {
   return fixed.replace(/\.?0+$/, "");
 };
 
+const networkOrder = [
+  "TRC20",
+  "ERC20",
+  "BEP20",
+  "SOLANA",
+  "BTC",
+  "ETH",
+  "XRP",
+  "ADA",
+  "DOGE",
+];
+
+const getPreferredAssetForSymbol = (assets: AssetItem[], symbol: string) => {
+  const candidates = assets.filter((item) => item.symbol === symbol);
+  if (candidates.length === 0) return null;
+  const ranked = [...candidates].sort((a, b) => {
+    const aIndex = networkOrder.indexOf(a.network);
+    const bIndex = networkOrder.indexOf(b.network);
+    const aRank = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
+    const bRank = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
+    if (aRank !== bRank) return aRank - bRank;
+    return a.network.localeCompare(b.network);
+  });
+  return ranked[0];
+};
+
 export default function DepositModal({
   open,
   onOpenChange,
@@ -46,12 +72,14 @@ export default function DepositModal({
   onRetryPrice,
   locked = false,
   lockMessage,
+  loading = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (payload: {
     assetId: number | string;
     amount: number;
+    usdAmount?: number;
   }) => void;
   initialAssetId?: number | string | null;
   assets?: AssetItem[];
@@ -62,6 +90,7 @@ export default function DepositModal({
   onRetryPrice?: (symbol: string) => void;
   locked?: boolean;
   lockMessage?: string;
+  loading?: boolean;
 }) {
   const [assetId, setAssetId] = useState<number | string | null>(null);
   const [amount, setAmount] = useState("");
@@ -90,7 +119,8 @@ export default function DepositModal({
 
   useEffect(() => {
     if (!assetId && activeAssets.length > 0) {
-      setAssetId(activeAssets[0].id);
+      const preferred = getPreferredAssetForSymbol(activeAssets, activeAssets[0].symbol);
+      setAssetId(preferred?.id ?? activeAssets[0].id);
     }
   }, [assetId, activeAssets]);
 
@@ -227,7 +257,7 @@ export default function DepositModal({
           )}
           <section>
             <p className="text-xs uppercase tracking-wide text-ts-text-muted">
-              Select asset
+              Select asset <span className="text-ts-danger">*</span>
             </p>
             {activeAssets.length === 0 ? (
               <p className="mt-2 text-sm text-ts-text-muted">
@@ -245,7 +275,10 @@ export default function DepositModal({
                     <button
                       key={symbol}
                       type="button"
-                      onClick={() => setAssetId(asset.id)}
+                      onClick={() => {
+                        const preferred = getPreferredAssetForSymbol(activeAssets, symbol);
+                        setAssetId(preferred?.id ?? asset.id);
+                      }}
                       className={`flex min-w-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs transition sm:text-sm ${
                         isActive
                           ? "border-ts-primary bg-ts-primary/10 text-ts-text-main"
@@ -265,7 +298,7 @@ export default function DepositModal({
           {selectedAsset && (
             <section>
               <label className="text-xs uppercase tracking-wide text-ts-text-muted">
-                Network
+                Network <span className="text-ts-danger">*</span>
               </label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {networksForSymbol.map((item) => {
@@ -389,6 +422,7 @@ export default function DepositModal({
           <DepositActions
             onCancel={() => onOpenChange(false)}
             onConfirm={() => {
+              if (loading) return;
               if (!isValid || !selectedAsset) {
                 setTouched(true);
                 return;
@@ -396,13 +430,15 @@ export default function DepositModal({
               if (locked || priceUnavailable) {
                 return;
               }
+              const numericUsd = parseAmount(usdAmount);
               onConfirm({
                 assetId: selectedAsset.id,
                 amount: numericAmount,
+                usdAmount: numericUsd > 0 ? numericUsd : undefined,
               });
             }}
             canConfirm={isValid && !locked && !priceUnavailable}
-            loading={false}
+            loading={loading}
           />
         </div>
 

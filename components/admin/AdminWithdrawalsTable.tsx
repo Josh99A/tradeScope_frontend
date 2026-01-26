@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
 import AssetIcon from "@/components/ui/AssetIcon";
 import { formatAmount } from "@/lib/formatters";
+import toast from "react-hot-toast";
+import { Loader2 } from "lucide-react";
 
 type AdminWithdrawal = {
   id?: number | string;
@@ -42,11 +44,15 @@ export default function AdminWithdrawalsTable({
   onProcessing,
   onPaid,
   onReject,
+  busyId,
+  busyAction,
 }: {
   items: AdminWithdrawal[];
   onProcessing: (id: number | string) => void;
   onPaid: (id: number | string) => void;
   onReject: (id: number | string) => void;
+  busyId?: number | string | null;
+  busyAction?: "processing" | "paid" | "reject" | null;
 }) {
   const [copiedId, setCopiedId] = useState<number | string | null>(null);
   const orderedItems = [...items].sort((a, b) => {
@@ -56,12 +62,17 @@ export default function AdminWithdrawalsTable({
   });
 
   const copyAddress = async (item: AdminWithdrawal) => {
-    if (!item.address) return;
+    if (!item.address) {
+      toast.error("No withdrawal address available to copy.");
+      return;
+    }
     try {
       await navigator.clipboard.writeText(item.address);
       setCopiedId(item.id ?? "address");
+      toast.success("Address copied to clipboard.");
       window.setTimeout(() => setCopiedId(null), 1500);
     } catch (_e) {
+      toast.error("Unable to copy automatically.");
       window.prompt("Copy address:", item.address);
     }
   };
@@ -95,7 +106,23 @@ export default function AdminWithdrawalsTable({
                 </tr>
               </thead>
               <tbody className="divide-y divide-ts-border">
-                {orderedItems.map((item, index) => (
+                {orderedItems.map((item, index) => {
+                  const isProcessingBusy =
+                    busyId !== undefined &&
+                    busyId !== null &&
+                    String(busyId) === String(item.id) &&
+                    busyAction === "processing";
+                  const isPaidBusy =
+                    busyId !== undefined &&
+                    busyId !== null &&
+                    String(busyId) === String(item.id) &&
+                    busyAction === "paid";
+                  const isRejectBusy =
+                    busyId !== undefined &&
+                    busyId !== null &&
+                    String(busyId) === String(item.id) &&
+                    busyAction === "reject";
+                  return (
                   <tr key={item.id ?? index}>
                     <td className="py-3 pr-4">{formatDate(item.created_at)}</td>
                     <td className="py-3 pr-4">{getUserLabel(item.user)}</td>
@@ -143,43 +170,84 @@ export default function AdminWithdrawalsTable({
                           onClick={() => item.id && onProcessing(item.id)}
                           disabled={
                             !item.id ||
-                            String(item.status).toLowerCase() !== "pending_review"
+                            isProcessingBusy ||
+                            !(["pending", "pending_review"].includes(String(item.status).toLowerCase()))
                           }
                           className="bg-ts-primary text-white hover:opacity-90"
                         >
-                          Processing
+                          {isProcessingBusy ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            "Processing"
+                          )}
                         </Button>
                         <Button
                           type="button"
                           onClick={() => item.id && onPaid(item.id)}
                           disabled={
                             !item.id ||
+                            isPaidBusy ||
                             String(item.status).toLowerCase() === "paid"
                           }
                           className="bg-ts-success text-white hover:opacity-90"
                         >
-                          Paid
+                          {isPaidBusy ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            "Paid"
+                          )}
                         </Button>
                         <Button
                           type="button"
                           onClick={() => item.id && onReject(item.id)}
                           disabled={
                             !item.id ||
+                            isRejectBusy ||
                             String(item.status).toLowerCase() === "rejected"
                           }
                           className="bg-ts-danger text-white hover:opacity-90"
                         >
-                          Reject
+                          {isRejectBusy ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            "Reject"
+                          )}
                         </Button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
           <div className="mt-4 grid gap-3 md:hidden">
-            {orderedItems.map((item, index) => (
+            {orderedItems.map((item, index) => {
+              const isProcessingBusy =
+                busyId !== undefined &&
+                busyId !== null &&
+                String(busyId) === String(item.id) &&
+                busyAction === "processing";
+              const isPaidBusy =
+                busyId !== undefined &&
+                busyId !== null &&
+                String(busyId) === String(item.id) &&
+                busyAction === "paid";
+              const isRejectBusy =
+                busyId !== undefined &&
+                busyId !== null &&
+                String(busyId) === String(item.id) &&
+                busyAction === "reject";
+              return (
               <div
                 key={item.id ?? index}
                 className="rounded-lg border border-ts-border bg-ts-bg-main p-4"
@@ -243,36 +311,62 @@ export default function AdminWithdrawalsTable({
                     onClick={() => item.id && onProcessing(item.id)}
                     disabled={
                       !item.id ||
-                      String(item.status).toLowerCase() !== "pending_review"
+                      isProcessingBusy ||
+                      !(["pending", "pending_review"].includes(String(item.status).toLowerCase()))
                     }
                     className="bg-ts-primary text-white hover:opacity-90"
                   >
-                    Processing
+                    {isProcessingBusy ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Processing"
+                    )}
                   </Button>
                   <Button
                     type="button"
                     onClick={() => item.id && onPaid(item.id)}
                     disabled={
-                      !item.id || String(item.status).toLowerCase() === "paid"
+                      !item.id ||
+                      isPaidBusy ||
+                      String(item.status).toLowerCase() === "paid"
                     }
                     className="bg-ts-success text-white hover:opacity-90"
                   >
-                    Paid
+                    {isPaidBusy ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Paid"
+                    )}
                   </Button>
                   <Button
                     type="button"
                     onClick={() => item.id && onReject(item.id)}
                     disabled={
                       !item.id ||
+                      isRejectBusy ||
                       String(item.status).toLowerCase() === "rejected"
                     }
                     className="bg-ts-danger text-white hover:opacity-90"
                   >
-                    Reject
+                    {isRejectBusy ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Reject"
+                    )}
                   </Button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

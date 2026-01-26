@@ -3,121 +3,49 @@
 import { useEffect, useState } from "react";
 import AppShell from "@/components/layout/AppShell";
 import DashboardShell from "@/components/layout/DashboardShell";
-import ActivityLogTable from "@/components/activity/ActivityLogTable";
-import TradeHistoryTable from "@/components/activity/TradeHistoryTable";
-import StatusTable from "@/components/wallet/StatusTable";
-import { getDeposits, getWithdrawals } from "@/lib/wallet";
-import { getActivity } from "@/lib/activity";
-import { getTrades } from "@/lib/trades";
+import ActivityTable from "@/components/wallet/ActivityTable";
+import { getWalletActivity } from "@/lib/wallet";
 
-type ActivityLogItem = {
+type ActivityItem = {
   id?: number | string;
-  action?: string;
-  metadata?: Record<string, unknown> | null;
+  type?: string;
+  amount?: number | string;
+  status?: string;
   created_at?: string;
+  description?: string;
+  reference?: string;
   archived?: boolean;
   deleted?: boolean;
 };
 
-type StatusItem = {
-  id?: number | string;
-  amount?: number | string;
-  status?: string;
-  created_at?: string;
-};
-
-type TradeItem = {
-  id?: number | string;
-  symbol?: string;
-  volume?: number | string;
-  pnl?: number | string;
-  status?: string;
-  opened_at?: string;
-  closed_at?: string;
-};
-
-const normalizeActivity = (data: unknown): ActivityLogItem[] => {
-  if (Array.isArray(data)) return data as ActivityLogItem[];
+const normalizeActivity = (data: unknown): ActivityItem[] => {
+  if (Array.isArray(data)) return data as ActivityItem[];
   if (data && typeof data === "object") {
-    const maybe = data as {
-      results?: ActivityLogItem[];
-      items?: ActivityLogItem[];
-    };
-    return maybe.results || maybe.items || [];
-  }
-  return [];
-};
-
-const normalizeStatus = (data: unknown): StatusItem[] => {
-  if (Array.isArray(data)) return data as StatusItem[];
-  if (data && typeof data === "object") {
-    const maybe = data as { results?: StatusItem[]; items?: StatusItem[] };
-    return maybe.results || maybe.items || [];
-  }
-  return [];
-};
-
-const normalizeTrades = (data: unknown): TradeItem[] => {
-  if (Array.isArray(data)) return data as TradeItem[];
-  if (data && typeof data === "object") {
-    const maybe = data as { results?: TradeItem[]; items?: TradeItem[] };
+    const maybe = data as { results?: ActivityItem[]; items?: ActivityItem[] };
     return maybe.results || maybe.items || [];
   }
   return [];
 };
 
 export default function HistoryPage() {
-  const [activity, setActivity] = useState<ActivityLogItem[]>([]);
-  const [deposits, setDeposits] = useState<StatusItem[]>([]);
-  const [withdrawals, setWithdrawals] = useState<StatusItem[]>([]);
-  const [trades, setTrades] = useState<TradeItem[]>([]);
-  const [prices, setPrices] = useState<Record<string, number>>({});
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
-  const [activityTab, setActivityTab] = useState<"all" | "archived">("all");
-  const pendingWithdrawal = withdrawals.some((withdrawal) => {
-    const status = String(withdrawal.status).toUpperCase();
-    return (
-      status === "PENDING" ||
-      status === "PENDING_REVIEW" ||
-      status === "PROCESSING"
-    );
-  });
 
   const loadActivity = async () => {
     setNotice(null);
     try {
-      const [activityData, depositsData, withdrawalsData, tradesData] =
-        await Promise.all([
-          getActivity({ includeArchived: true }),
-          getDeposits(),
-          getWithdrawals(),
-          getTrades(),
-        ]);
+      const activityData = await getWalletActivity({
+        includeArchived: true,
+        forceRefresh: true,
+      });
       setActivity(normalizeActivity(activityData));
-      setDeposits(normalizeStatus(depositsData));
-      setWithdrawals(normalizeStatus(withdrawalsData));
-      setTrades(normalizeTrades(tradesData));
     } catch (_e) {
-      setNotice("Unable to load activity history.");
+      setNotice("Unable to load activity log.");
     }
   };
 
   useEffect(() => {
     loadActivity();
-  }, []);
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("ts_prices_cache");
-      if (raw) {
-        const parsed = JSON.parse(raw) as Record<string, number>;
-        if (parsed && typeof parsed === "object") {
-          setPrices(parsed);
-        }
-      }
-    } catch {
-      // ignore cache read errors
-    }
   }, []);
 
   return (
@@ -126,10 +54,10 @@ export default function HistoryPage() {
         <div className="space-y-4">
           <div>
             <h1 className="text-xl font-semibold text-ts-text-main">
-              History
+              Activity logs
             </h1>
             <p className="text-sm text-ts-text-muted">
-              Review your recent account activity.
+              Review your recent wallet activity.
             </p>
           </div>
 
@@ -139,70 +67,11 @@ export default function HistoryPage() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            {[
-              { id: "all", label: "All activity" },
-              { id: "archived", label: "Archived" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() =>
-                  setActivityTab(tab.id as "all" | "archived")
-                }
-                className={`rounded-full border px-4 py-2 text-sm transition ${
-                  activityTab === tab.id
-                    ? "border-ts-primary bg-ts-primary/10 text-ts-text-main"
-                    : "border-ts-border bg-ts-bg-card text-ts-text-muted hover:border-ts-primary/40"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <ActivityLogTable
-            items={
-              activityTab === "archived"
-                ? activity.filter((item) => item.archived)
-                : activity
-            }
-            title="Activity history"
-            emptyLabel={
-              activityTab === "archived"
-                ? "No archived activity recorded."
-                : "No activity recorded."
-            }
-            showArchivedByDefault={activityTab === "archived"}
-            hideArchiveToggle={activityTab === "archived"}
+          <ActivityTable
+            items={activity}
+            title="Wallet activity"
             onRefresh={loadActivity}
           />
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div id="deposits" className="scroll-mt-20">
-              <StatusTable
-                title="Deposit history"
-                items={deposits}
-                emptyLabel="No deposits recorded."
-                prices={prices}
-              />
-            </div>
-            <div id="withdrawals" className="scroll-mt-20">
-              <StatusTable
-                title="Withdrawal history"
-                items={withdrawals}
-                emptyLabel="No withdrawals recorded."
-                prices={prices}
-              />
-            </div>
-          </div>
-          <TradeHistoryTable items={trades} />
-          {pendingWithdrawal && (
-            <div className="rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-sm text-ts-text-main">
-              Your withdrawal request is pending and will be processed
-              within 24 hours.
-            </div>
-          )}
         </div>
       </AppShell>
     </DashboardShell>
