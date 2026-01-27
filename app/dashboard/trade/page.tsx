@@ -165,6 +165,10 @@ export default function TradeChart() {
     if (!selectedAsset) return [];
     return activeAssets.filter((item) => item.symbol === selectedAsset.symbol);
   }, [activeAssets, selectedAsset]);
+  const availableNetworks = useMemo(() => {
+    const set = new Set(networksForSymbol.map((item) => item.network));
+    return Array.from(set);
+  }, [networksForSymbol]);
 
   useEffect(() => {
     const loadAssets = async () => {
@@ -305,11 +309,11 @@ export default function TradeChart() {
     const symbolParam = searchParams.get("symbol");
     const quoteParam = searchParams.get("quote");
     if (quoteParam === "USDC" || quoteParam === "USDT") {
-      setQuote(quoteParam);
+      setQuote((prev) => (prev === quoteParam ? prev : quoteParam));
     }
     if (!symbolParam) return;
     setBaseSymbol(getBaseSymbol(symbolParam));
-  }, [searchParams, quote]);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!selectedAsset) return;
@@ -495,7 +499,7 @@ export default function TradeChart() {
         side: side.toUpperCase(),
         requested_amount_asset: numericAsset,
         requested_amount_usd: parseAmount(amountUsd),
-        conversion_rate_used: priceUsd,
+        conversion_rate_used: Number(priceUsd.toFixed(8)),
         quote_symbol: quote,
         user_note: note,
       });
@@ -547,7 +551,11 @@ export default function TradeChart() {
           </div>
 
           <div className="flex w-full flex-wrap gap-2 items-center sm:w-auto sm:flex-nowrap">
-            <div className="grid w-full grid-cols-3 items-center gap-1 rounded-md border border-ts-border bg-ts-bg-main p-1 sm:flex sm:w-auto">
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-ts-text-muted">
+                Quote currency
+              </p>
+              <div className="mt-1 grid w-full grid-cols-3 items-center gap-1 rounded-md border border-ts-border bg-ts-bg-main p-1 sm:flex sm:w-auto">
               {(["USDT", "USDC"] as const).map((item) => (
                 <button
                   key={item}
@@ -563,6 +571,10 @@ export default function TradeChart() {
                   {item}
                 </button>
               ))}
+            </div>
+              <p className="mt-1 text-[11px] text-ts-text-muted">
+                Tap to change the quote price used for orders.
+              </p>
             </div>
             <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[160px] sm:flex-none">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ts-text-muted" />
@@ -635,30 +647,25 @@ export default function TradeChart() {
             <p className="text-xs uppercase tracking-wide text-ts-text-muted">
               Select asset
             </p>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {symbols.map((symbol) => {
-                const asset = activeAssets.find((item) => item.symbol === symbol);
-                if (!asset) return null;
-                const isActive = selectedAsset?.symbol === symbol;
-                return (
-                  <button
-                    key={symbol}
-                    type="button"
-                    onClick={() => setAssetId(asset.id)}
-                    className={`flex min-w-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs transition sm:text-sm ${
-                      isActive
-                        ? "border-ts-primary bg-ts-primary/10 text-ts-text-main"
-                        : "border-ts-border bg-ts-bg-main text-ts-text-muted hover:border-ts-primary/50"
-                    }`}
-                  >
-                    <AssetIcon symbol={asset.symbol} size={28} />
-                    <span className="sr-only">
-                      {asset.name} ({asset.symbol})
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            {selectedAsset ? (
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <button
+                  key={selectedAsset.symbol}
+                  type="button"
+                  onClick={() => setAssetId(selectedAsset.id)}
+                  className="flex min-w-0 items-center gap-2 rounded-lg border border-ts-primary bg-ts-primary/10 px-3 py-2 text-xs text-ts-text-main transition sm:text-sm"
+                >
+                  <AssetIcon symbol={selectedAsset.symbol} size={28} />
+                  <span className="sr-only">
+                    {selectedAsset.name} ({selectedAsset.symbol})
+                  </span>
+                </button>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-ts-text-muted">
+                No active asset selected.
+              </p>
+            )}
           </section>
 
           {selectedAsset && (
@@ -685,6 +692,11 @@ export default function TradeChart() {
                   );
                 })}
               </div>
+              {availableNetworks.length > 0 && (
+                <p className="mt-2 text-xs text-ts-text-muted">
+                  Supported networks: {availableNetworks.join(", ")}
+                </p>
+              )}
             </section>
           )}
 

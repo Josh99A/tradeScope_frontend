@@ -100,19 +100,24 @@ export default function AdminAssetsPage() {
   const presets: Array<{
     name: string;
     symbol: string;
-    network: string;
+    networks: string[];
   }> = [
-    { name: "Bitcoin", symbol: "BTC", network: "BTC" },
-    { name: "Ethereum", symbol: "ETH", network: "ERC20" },
-    { name: "Solana", symbol: "SOL", network: "SOLANA" },
-    { name: "USD Coin", symbol: "USDC", network: "ERC20" },
-    { name: "USD Coin", symbol: "USDC", network: "SOLANA" },
-    { name: "Tether", symbol: "USDT", network: "ERC20" },
-    { name: "Tether", symbol: "USDT", network: "TRC20" },
-    { name: "Dogecoin", symbol: "DOGE", network: "DOGE" },
-    { name: "XRP", symbol: "XRP", network: "XRP" },
-    { name: "Cardano", symbol: "ADA", network: "ADA" },
+    { name: "Bitcoin", symbol: "BTC", networks: ["BTC"] },
+    { name: "Ethereum", symbol: "ETH", networks: ["ERC20"] },
+    { name: "Solana", symbol: "SOL", networks: ["SOLANA"] },
+    { name: "USD Coin", symbol: "USDC", networks: ["ERC20", "SOLANA"] },
+    { name: "Tether", symbol: "USDT", networks: ["ERC20", "TRC20"] },
+    { name: "Dogecoin", symbol: "DOGE", networks: ["DOGE"] },
+    { name: "XRP", symbol: "XRP", networks: ["XRP"] },
+    { name: "Cardano", symbol: "ADA", networks: ["ADA"] },
   ];
+  const presetNetworkMap = presets.reduce<Record<string, string[]>>(
+    (acc, preset) => {
+      acc[preset.symbol.toUpperCase()] = preset.networks;
+      return acc;
+    },
+    {}
+  );
 
   const coincapIdHints: Record<string, string> = {
     BTC: "bitcoin",
@@ -545,24 +550,30 @@ export default function AdminAssetsPage() {
                   <div className="mt-2 flex flex-wrap gap-2">
                 {presets.map((preset) => (
                   <Button
-                    key={`${preset.symbol}-${preset.network}`}
+                    key={`${preset.symbol}-${preset.networks.join("-")}`}
                     type="button"
                     onClick={() =>
                       setForm((prev) => ({
                         ...prev,
                         name: preset.name,
                         symbol: preset.symbol,
-                        network: preset.network,
+                        network: preset.networks[0] || "",
                         coincap_id:
                           coincapIdHints[preset.symbol.toUpperCase()] || "",
                       }))
                     }
+                    title={`${preset.symbol} • ${preset.networks.join(", ")}`}
                     className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
                   >
-                        <AssetIcon symbol={preset.symbol} size={20} />
-                        <span className="sr-only">{preset.symbol}</span>
-                      </Button>
-                    ))}
+                    <AssetIcon symbol={preset.symbol} size={20} />
+                    <span className="text-xs font-semibold text-ts-text-main">
+                      {preset.symbol}
+                    </span>
+                    <span className="text-[11px] text-ts-text-muted">
+                      {preset.networks.join(", ")}
+                    </span>
+                  </Button>
+                ))}
                   </div>
                 </div>
                 <div>
@@ -616,6 +627,12 @@ export default function AdminAssetsPage() {
                     placeholder="e.g. TRC20"
                     className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
                   />
+                  {form.symbol && presetNetworkMap[form.symbol.toUpperCase()] ? (
+                    <p className="mt-1 text-xs text-ts-text-muted">
+                      Common networks:{" "}
+                      {presetNetworkMap[form.symbol.toUpperCase()].join(", ")}
+                    </p>
+                  ) : null}
                 </div>
                 <div>
                   <label htmlFor="asset-status" className="text-xs text-ts-text-muted">

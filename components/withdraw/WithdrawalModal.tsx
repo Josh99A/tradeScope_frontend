@@ -122,6 +122,10 @@ export default function WithdrawalModal({
     if (!selectedAsset) return [];
     return activeAssets.filter((item) => item.symbol === selectedAsset.symbol);
   }, [activeAssets, selectedAsset]);
+  const availableNetworks = useMemo(() => {
+    const set = new Set(networksForSymbol.map((item) => item.network));
+    return Array.from(set);
+  }, [networksForSymbol]);
 
   useEffect(() => {
     if (!assetId && activeAssets.length > 0) {
@@ -337,6 +341,11 @@ export default function WithdrawalModal({
                   );
                 })}
               </div>
+              {availableNetworks.length > 0 && (
+                <p className="mt-2 text-xs text-ts-text-muted">
+                  Supported networks: {availableNetworks.join(", ")}
+                </p>
+              )}
             </section>
           )}
 
