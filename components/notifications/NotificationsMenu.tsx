@@ -346,7 +346,7 @@ export default function NotificationsMenu({ isAdmin }: { isAdmin: boolean }) {
       </Button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-[92vw] max-w-[22rem] rounded-xl border border-ts-border bg-ts-bg-card p-4 shadow-xl sm:w-80">
+        <div className="fixed left-2 right-2 top-16 w-auto rounded-xl border border-ts-border bg-ts-bg-card p-4 shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-ts-text-main">
               Notifications

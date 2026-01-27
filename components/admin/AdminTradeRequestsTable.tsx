@@ -290,7 +290,7 @@ export default function AdminTradeRequestsTable({
       )}
 
       {executeOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-3 sm:items-center sm:p-6">
+        <div className="fixed inset-0 z-50 flex items-start justify-center px-3 pt-16 pb-24 sm:items-center sm:p-6">
           <button
             type="button"
             className="absolute inset-0 bg-black/50"

@@ -41,39 +41,41 @@ const MarketTable = () => {
   return (
     <Card>
       <h3 className="mb-2 font-semibold">Markets</h3>
-      <table className="w-full text-sm">
-        <tbody>
-          {markets.map((market) => {
-            const change = market.change24h ?? 0;
-            const isPositive = change >= 0;
-            const tradeSymbol = `${market.symbol}USDT`;
-            return (
-              <tr key={market.id} className="border-b border-ts-border">
-                <td className="py-2">
-                  <Link
-                    href={`/dashboard/trade?symbol=${tradeSymbol}&quote=USDT`}
-                    className="flex items-center gap-2 hover:text-ts-primary"
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[360px] text-sm">
+          <tbody>
+            {markets.map((market) => {
+              const change = market.change24h ?? 0;
+              const isPositive = change >= 0;
+              const tradeSymbol = `${market.symbol}USDT`;
+              return (
+                <tr key={market.id} className="border-b border-ts-border">
+                  <td className="py-2">
+                    <Link
+                      href={`/dashboard/trade?symbol=${tradeSymbol}&quote=USDT`}
+                      className="flex items-center gap-2 hover:text-ts-primary"
+                    >
+                      <AssetIcon symbol={market.symbol} size={20} />
+                      <span className="sr-only">
+                        {market.name} ({market.symbol})
+                      </span>
+                    </Link>
+                  </td>
+                  <td className="py-2">{formatPrice(market.price)}</td>
+                  <td
+                    className={`py-2 ${
+                      isPositive ? "text-ts-success" : "text-ts-danger"
+                    }`}
                   >
-                    <AssetIcon symbol={market.symbol} size={20} />
-                    <span className="sr-only">
-                      {market.name} ({market.symbol})
-                    </span>
-                  </Link>
-                </td>
-                <td className="py-2">{formatPrice(market.price)}</td>
-                <td
-                  className={`py-2 ${
-                    isPositive ? "text-ts-success" : "text-ts-danger"
-                  }`}
-                >
-                  {isPositive ? "+" : ""}
-                  {change.toFixed(2)}%
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                    {isPositive ? "+" : ""}
+                    {change.toFixed(2)}%
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 };

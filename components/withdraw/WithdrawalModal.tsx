@@ -238,7 +238,7 @@ export default function WithdrawalModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-3 sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex items-start justify-center px-3 pt-16 pb-24 sm:items-center sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="withdraw-title"

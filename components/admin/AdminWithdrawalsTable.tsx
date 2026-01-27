@@ -282,7 +282,7 @@ export default function AdminWithdrawalsTable({
                   <StatusBadge value={item.status} />
                 </div>
                 <div className="mt-3 rounded-md border border-ts-border bg-ts-bg-card px-3 py-2 text-xs text-ts-text-muted">
-                  <p className="truncate">
+                  <p className="break-all">
                     Address:{" "}
                     <span className="text-ts-text-main">{item.address || "--"}</span>
                   </p>

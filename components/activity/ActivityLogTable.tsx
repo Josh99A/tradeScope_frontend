@@ -225,7 +225,7 @@ export default function ActivityLogTable({
                   <td className="py-3 pr-4">
                     {humanizeAction(item.action)}
                   </td>
-                  <td className="py-3 text-ts-text-muted">
+                  <td className="py-3 text-ts-text-muted break-words">
                     {formatMeta(item.metadata)}
                   </td>
                   <td className="py-3">
@@ -295,7 +295,7 @@ export default function ActivityLogTable({
                     </button>
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-ts-text-muted">
+                <p className="mt-2 text-xs text-ts-text-muted break-words">
                   {formatMeta(item.metadata)}
                 </p>
               </div>

@@ -45,7 +45,9 @@ const HomePage = () => {
           </div>
         </div>
 
-        <LiveMarketHero />
+        <div className="mb-10 lg:mb-0">
+          <LiveMarketHero />
+        </div>
       </section>
 
       {/* ================= MARKET HIGHLIGHTS ================= */}

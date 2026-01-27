@@ -1,7 +1,11 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import api from "@/lib/axios";
+import { useRouter } from "next/navigation";
+import api, { resetSessionExpiredNotice } from "@/lib/axios";
+import { refreshToken } from "@/lib/auth";
+import SessionExpiredModal from "@/components/ui/SessionExpiredModal";
+import toast from "react-hot-toast";
 
 type User = {
   id: number;
@@ -25,6 +29,9 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const router = useRouter();
 
   const fetchUser = async () => {
     setLoading(true);
@@ -42,6 +49,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setSessionExpiredOpen(true);
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("ts-session-expired", handleSessionExpired);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("ts-session-expired", handleSessionExpired);
+      }
+    };
+  }, []);
+
+  const handleRefreshSession = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await refreshToken();
+      await fetchUser();
+      setSessionExpiredOpen(false);
+      resetSessionExpiredNotice();
+      toast.success("Session refreshed.");
+    } catch {
+      setUser(null);
+      setSessionExpiredOpen(false);
+      resetSessionExpiredNotice();
+      toast.error("Session refresh failed. Please sign in again.");
+      router.push("/login");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleDismiss = () => {
+    setSessionExpiredOpen(false);
+    resetSessionExpiredNotice();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -52,6 +98,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
+      <SessionExpiredModal
+        open={sessionExpiredOpen}
+        onConfirm={handleRefreshSession}
+        onDismiss={handleDismiss}
+        busy={refreshing}
+      />
     </AuthContext.Provider>
   );
 }
