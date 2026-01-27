@@ -178,9 +178,11 @@ export default function TradeChart() {
         const data = await getActiveAssets();
         const list = Array.isArray(data) ? data : data?.items || data?.results || [];
         setAssets(list);
-        if (!assetId && list.length > 0) {
-          setAssetId(list[0].id);
-          setBaseSymbol(list[0].symbol);
+        if (list.length > 0) {
+          const symbolParam = searchParams.get("symbol");
+          if (!symbolParam) {
+            applySymbol(list[0].symbol, quote);
+          }
         }
       } catch {
         const message = "Unable to load assets.";
@@ -214,12 +216,6 @@ export default function TradeChart() {
       // ignore cache read errors
     }
   }, []);
-
-  useEffect(() => {
-    if (selectedAsset) {
-      setBaseSymbol(selectedAsset.symbol);
-    }
-  }, [selectedAsset]);
 
   useEffect(() => {
     if (!activeAssets.length) return;
@@ -426,11 +422,13 @@ export default function TradeChart() {
 
   const applySymbol = (symbol: string, nextQuote = quote) => {
     const base = getBaseSymbol(symbol);
-    setBaseSymbol(base);
     const normalized = normalizeSymbol(base, nextQuote);
     const nextUrl = `/dashboard/trade?symbol=${normalized.replace("BINANCE:", "")}&quote=${nextQuote}`;
     router.replace(nextUrl);
-    window.location.assign(nextUrl);
+  };
+
+  const handleAssetSelect = (symbol: string) => {
+    applySymbol(symbol, quote);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -595,24 +593,27 @@ export default function TradeChart() {
           </div>
         </div>
 
-        <div className="px-4 py-3 flex gap-2 flex-wrap border-b border-ts-border">
+        <div className="px-4 py-3 flex flex-col gap-2 border-b border-ts-border">
+          <p className="text-[11px] uppercase tracking-wide text-ts-text-muted">
+            Quick assets
+          </p>
+          <div className="flex gap-2 flex-wrap">
           {symbols.slice(0, 6).map((symbol) => (
             <button
               key={symbol}
-              onClick={() => applySymbol(symbol, quote)}
+              onClick={() => handleAssetSelect(symbol)}
               className={cn(
-                "px-3 py-1 rounded-full text-xs transition",
+                "px-3 py-1 rounded-full text-xs transition border",
                 getBaseSymbol(currentSymbol) === getBaseSymbol(symbol)
-                  ? "bg-ts-primary text-white"
-                  : "bg-ts-hover text-ts-text-main hover:bg-ts-active"
+                  ? "bg-ts-primary text-white border-ts-primary shadow-sm"
+                  : "bg-ts-bg-main text-ts-text-main border-ts-border hover:border-ts-primary/40 hover:bg-ts-primary/10"
               )}
             >
               <AssetIcon symbol={symbol} size={16} />
-              <span className="sr-only">
-                {normalizeSymbol(symbol, quote).replace("BINANCE:", "")}
-              </span>
+              <span className="ml-1">{symbol}</span>
             </button>
           ))}
+          </div>
         </div>
 
         <div
@@ -652,11 +653,11 @@ export default function TradeChart() {
                 <button
                   key={selectedAsset.symbol}
                   type="button"
-                  onClick={() => setAssetId(selectedAsset.id)}
+                  onClick={() => handleAssetSelect(selectedAsset.symbol)}
                   className="flex min-w-0 items-center gap-2 rounded-lg border border-ts-primary bg-ts-primary/10 px-3 py-2 text-xs text-ts-text-main transition sm:text-sm"
                 >
                   <AssetIcon symbol={selectedAsset.symbol} size={28} />
-                  <span className="sr-only">
+                  <span className="text-sm font-semibold">
                     {selectedAsset.name} ({selectedAsset.symbol})
                   </span>
                 </button>
