@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import MobileDrawer from "@/components/dashboard/MobileDrawer";
@@ -15,12 +15,16 @@ export default function DashboardShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.replace("/login");
+      const query = searchParams.toString();
+      const next = `${pathname}${query ? `?${query}` : ""}`;
+      router.replace(`/login?next=${encodeURIComponent(next)}`);
     }
-  }, [loading, isAuthenticated, router]);
+  }, [loading, isAuthenticated, router, pathname, searchParams]);
 
   if (loading || !isAuthenticated) return null;
 

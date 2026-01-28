@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import FormField from "@/components/auth/FormField";
 import { registerUser, loginUser } from "@/lib/auth";
@@ -40,6 +40,12 @@ const getPasswordMeta = (value: string) => {
 
 const Page = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams.get("next");
+  const nextUrl =
+    nextParam && nextParam.startsWith("/")
+      ? nextParam
+      : "/dashboard";
   const { refreshUser, isAuthenticated, loading: authLoading } = useAuth();
 
   const [username, setUsername] = useState("");
@@ -65,9 +71,9 @@ const Page = () => {
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      router.replace("/dashboard");
+      router.replace(nextUrl);
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router, nextUrl]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -103,7 +109,7 @@ const Page = () => {
 
       // Redirect
       toast.success("Account created successfully. Welcome to TradeScope!");
-      router.replace("/dashboard");
+      router.replace(nextUrl);
 
     } catch (error) {
       const message =

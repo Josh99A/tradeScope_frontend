@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { loginUser } from "@/lib/auth";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -15,15 +15,21 @@ const Page = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams.get("next");
+  const nextUrl =
+    nextParam && nextParam.startsWith("/")
+      ? nextParam
+      : "/dashboard";
 
 
   const { refreshUser, isAuthenticated, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      router.replace("/dashboard");
+      router.replace(nextUrl);
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router, nextUrl]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -42,7 +48,7 @@ const Page = () => {
       await refreshUser();
 
       toast.success("Welcome back! You're now signed in.");
-      router.replace("/dashboard");
+      router.replace(nextUrl);
 
     } catch (error) {
       const message =

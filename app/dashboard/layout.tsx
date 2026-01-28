@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useState } from "react";
 
@@ -17,12 +17,16 @@ const DashboardLayout = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.replace("/login");
+      const query = searchParams.toString();
+      const next = `${pathname}${query ? `?${query}` : ""}`;
+      router.replace(`/login?next=${encodeURIComponent(next)}`);
     }
-  }, [loading, isAuthenticated]);
+  }, [loading, isAuthenticated, router, pathname, searchParams]);
 
   if (loading) return null;
 
