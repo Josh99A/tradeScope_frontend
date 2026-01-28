@@ -309,6 +309,9 @@ export default function WithdrawalModal({
                       aria-pressed={isActive}
                     >
                       <AssetIcon symbol={asset.symbol} size={28} />
+                      <span className="text-xs font-semibold text-ts-text-main">
+                        {asset.symbol}
+                      </span>
                       <span className="sr-only">{asset.name}</span>
                     </button>
                   );
