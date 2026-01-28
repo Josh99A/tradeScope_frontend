@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const handleSessionExpired = () => {
+      if (!user) return;
       setSessionExpiredOpen(true);
     };
     if (typeof window !== "undefined") {
