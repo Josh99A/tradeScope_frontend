@@ -47,6 +47,7 @@ const normalizeList = <T,>(data: unknown): T[] => {
     return maybe.results || maybe.items || [];
   }
   return [];
+};
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (!error || typeof error !== "object") return fallback;
@@ -65,8 +66,6 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   }
   if (error instanceof Error && error.message) return error.message;
   return fallback;
-};
-
 };
 
 export default function AdminAssetsPage() {
