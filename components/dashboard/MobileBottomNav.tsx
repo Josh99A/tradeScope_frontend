@@ -7,7 +7,7 @@ const navItems = [
   { label: "Home", icon: Home, path: "/" },
   { label: "Trade", icon: BarChart2, path: "/dashboard/trade" },
   { label: "Wallet", icon: Wallet, path: "/wallet" },
-  { label: "Orders", icon: List, path: "/orders" },
+  { label: "Markets", icon: List, path: "/markets" },
   { label: "Account", icon: User, path: "/settings" },
 ];
 const MobileBottomNav = () => {
