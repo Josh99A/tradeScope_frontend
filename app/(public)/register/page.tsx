@@ -40,7 +40,7 @@ const getPasswordMeta = (value: string) => {
 
 const Page = () => {
   const router = useRouter();
-  const { refreshUser } = useAuth();
+  const { refreshUser, isAuthenticated, loading: authLoading } = useAuth();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -62,6 +62,12 @@ const Page = () => {
 
     return () => URL.revokeObjectURL(objectUrl);
   }, [profilePhoto]);
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

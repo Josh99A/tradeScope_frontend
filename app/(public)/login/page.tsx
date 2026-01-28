@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { loginUser } from "@/lib/auth";
 import Link from "next/link";
@@ -17,7 +17,13 @@ const Page = () => {
   const router = useRouter();
 
 
-  const { refreshUser } = useAuth();
+  const { refreshUser, isAuthenticated, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
