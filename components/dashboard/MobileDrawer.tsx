@@ -6,6 +6,7 @@ import NavItem from "../navigation/NavItem";
 import { NAV_ITEMS } from "../navigation/nav.config";
 import ThemeToggle from "../ui/ThemeToggle";
 import { Button } from "../ui/Button";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const links = [
   "Dashboard",
@@ -22,6 +23,8 @@ const MobileDrawer = ({
   open: boolean;
   onClose: () => void;
 }) => {
+  const { user } = useAuth();
+  const isAdmin = !!(user?.is_staff || user?.is_superuser);
   if (!open) return null;
   return (
     <>
@@ -51,14 +54,22 @@ const MobileDrawer = ({
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
-          {NAV_ITEMS.map((group) => (
+          {NAV_ITEMS.map((group) => {
+            const items = group.items.filter((item) => {
+              if (item.href.startsWith("/admin")) {
+                return isAdmin;
+              }
+              return true;
+            });
+            if (items.length === 0) return null;
+            return (
             <div key={group.section}>
               <p className="px-3 mb-2 text-xs uppercase text-ts-text-muted">
                 {group.section}
               </p>
 
               <div className="space-y-1">
-                {group.items.map((item) => (
+                {items.map((item) => (
                   <NavItem
                     key={item.href}
                     {...item}
@@ -67,7 +78,8 @@ const MobileDrawer = ({
                 ))}
               </div>
             </div>
-          ))}
+            );
+          })}
         </nav>
 
         {/* Footer */}
