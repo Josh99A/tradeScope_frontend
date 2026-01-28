@@ -12,7 +12,10 @@ type AssetIconProps = {
 const getTokenComponent = (symbol?: string | null) => {
   if (!symbol) return null;
   const key = `Token${String(symbol).toUpperCase()}`;
-  return (tokenIcons as Record<string, React.ComponentType<any>>)[key] || null;
+  return (
+    (tokenIcons as unknown as Record<string, React.ComponentType<any>>)[key] ||
+    null
+  );
 };
 
 export default function AssetIcon({
