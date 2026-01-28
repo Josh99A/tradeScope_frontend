@@ -109,6 +109,7 @@ export default function WithdrawalModal({
   const [touched, setTouched] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const initialFocusRef = useRef<HTMLButtonElement | null>(null);
+  const isBusy = loading;
 
   const activeAssets = (assets || []).filter((item) => item.is_active);
   const symbols = useMemo(() => {
@@ -259,7 +260,10 @@ export default function WithdrawalModal({
         type="button"
         className="absolute inset-0 bg-black/50"
         aria-label="Close withdrawal modal"
-        onClick={() => onOpenChange(false)}
+        onClick={() => {
+          if (isBusy) return;
+          onOpenChange(false);
+        }}
       />
       <div
         ref={containerRef}
@@ -273,6 +277,7 @@ export default function WithdrawalModal({
             type="button"
             onClick={() => onOpenChange(false)}
             className="rounded-md border border-ts-border bg-ts-bg-main px-3 py-1 text-xs text-ts-text-muted hover:text-ts-text-main"
+            disabled={isBusy}
           >
             Close
           </button>
@@ -319,6 +324,7 @@ export default function WithdrawalModal({
                           : "border-ts-border bg-ts-bg-main text-ts-text-muted hover:border-ts-primary/50"
                       }`}
                       aria-pressed={isActive}
+                      disabled={isBusy}
                     >
                       <AssetIcon symbol={asset.symbol} size={28} />
                       <span className="text-xs font-semibold text-ts-text-main">
@@ -350,6 +356,7 @@ export default function WithdrawalModal({
                           ? "border-ts-primary bg-ts-primary text-white"
                           : "border-ts-border bg-ts-bg-main text-ts-text-muted hover:text-ts-text-main"
                       }`}
+                      disabled={isBusy}
                     >
                       {item.network}
                     </button>
@@ -417,6 +424,7 @@ export default function WithdrawalModal({
                 onBlur={() => setTouched(true)}
                 placeholder="Paste wallet address"
                 className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm text-ts-text-main focus:outline-none"
+                disabled={isBusy}
               />
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -438,6 +446,7 @@ export default function WithdrawalModal({
                   onBlur={() => setTouched(true)}
                   placeholder="Enter amount"
                   className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm text-ts-text-main focus:outline-none"
+                  disabled={isBusy}
                 />
               </div>
               <div>
@@ -460,6 +469,7 @@ export default function WithdrawalModal({
                       : "Enter USD amount"
                   }
                   className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm text-ts-text-main focus:outline-none"
+                  disabled={isBusy}
                 />
               </div>
             </div>
@@ -507,6 +517,7 @@ export default function WithdrawalModal({
                 type="button"
                 onClick={() => onRetryPrice(symbol)}
                 className="text-xs text-ts-primary hover:underline"
+                disabled={isBusy}
               >
                 Retry CoinCap price
               </button>
@@ -530,6 +541,7 @@ export default function WithdrawalModal({
                 setProof(file);
               }}
               className="mt-2 block w-full text-xs text-ts-text-muted file:mr-3 file:rounded-md file:border file:border-ts-border file:bg-ts-bg-main file:px-3 file:py-1 file:text-xs file:text-ts-text-main hover:file:border-ts-primary/40"
+              disabled={isBusy}
             />
             {proof && (
               <p className="mt-2 text-xs text-ts-text-muted">
@@ -544,6 +556,7 @@ export default function WithdrawalModal({
             type="button"
             onClick={() => onOpenChange(false)}
             className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
+            disabled={isBusy}
           >
             Cancel
           </Button>

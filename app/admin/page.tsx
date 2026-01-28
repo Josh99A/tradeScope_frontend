@@ -313,6 +313,7 @@ export default function AdminDashboardPage() {
                   ? "reject"
                   : null
               }
+              disableActions={Boolean(actionState.action)}
             />
           )}
 
@@ -357,6 +358,7 @@ export default function AdminDashboardPage() {
                   ? "reject"
                   : null
               }
+              disableActions={Boolean(actionState.action)}
             />
           )}
 

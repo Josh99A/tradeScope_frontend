@@ -103,6 +103,7 @@ export default function DepositModal({
   const [touched, setTouched] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const initialFocusRef = useRef<HTMLButtonElement | null>(null);
+  const isBusy = loading;
 
   const activeAssets = (assets || []).filter((item) => item.is_active);
   const symbols = useMemo(() => {
@@ -245,7 +246,10 @@ export default function DepositModal({
         type="button"
         className="absolute inset-0 bg-black/50"
         aria-label="Close deposit modal"
-        onClick={() => onOpenChange(false)}
+        onClick={() => {
+          if (isBusy) return;
+          onOpenChange(false);
+        }}
       />
       <div
         ref={containerRef}
@@ -259,6 +263,7 @@ export default function DepositModal({
             type="button"
             onClick={() => onOpenChange(false)}
             className="rounded-md border border-ts-border bg-ts-bg-main px-3 py-1 text-xs text-ts-text-muted hover:text-ts-text-main"
+            disabled={isBusy}
           >
             Close
           </button>
@@ -301,6 +306,7 @@ export default function DepositModal({
                           : "border-ts-border bg-ts-bg-main text-ts-text-muted hover:border-ts-primary/50"
                       }`}
                       aria-pressed={isActive}
+                      disabled={isBusy}
                     >
                       <AssetIcon symbol={asset.symbol} size={28} />
                       <span className="text-xs font-semibold text-ts-text-main">
@@ -332,6 +338,7 @@ export default function DepositModal({
                           ? "border-ts-primary bg-ts-primary text-white"
                           : "border-ts-border bg-ts-bg-main text-ts-text-muted hover:text-ts-text-main"
                       }`}
+                      disabled={isBusy}
                     >
                       {item.network}
                     </button>
@@ -392,6 +399,7 @@ export default function DepositModal({
                   ? "Live price unavailable."
                   : undefined
                 }
+                disabled={isBusy}
               />
             <div>
               <label className="text-xs text-ts-text-muted">
@@ -411,6 +419,7 @@ export default function DepositModal({
                   priceUnavailable ? "USD price unavailable" : "Enter USD amount"
                 }
                 className="mt-2 w-full rounded-md bg-ts-input-bg border border-ts-input-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ts-primary"
+                disabled={isBusy}
               />
               <p className="mt-2 text-xs text-ts-text-muted">
                 {pricesLoading
@@ -434,6 +443,7 @@ export default function DepositModal({
                   type="button"
                   onClick={() => onRetryPrice(symbol)}
                   className="mt-2 text-xs text-ts-primary hover:underline"
+                  disabled={isBusy}
                 >
                   Retry CoinCap price
                 </button>
@@ -463,6 +473,7 @@ export default function DepositModal({
             }}
             canConfirm={isValid && !locked && !priceUnavailable}
             loading={loading}
+            disabled={isBusy}
           />
         </div>
 

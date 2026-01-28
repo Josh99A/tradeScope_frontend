@@ -53,6 +53,7 @@ export default function AdminTradeRequestsTable({
   onReject,
   busyId,
   busyAction,
+  disableActions = false,
 }: {
   items: TradeRequestItem[];
   onExecute: (id: number | string, payload: {
@@ -64,6 +65,7 @@ export default function AdminTradeRequestsTable({
   onReject: (id: number | string, reason: string) => Promise<void>;
   busyId?: number | string | null;
   busyAction?: "execute" | "reject" | null;
+  disableActions?: boolean;
 }) {
   const [executeOpen, setExecuteOpen] = useState(false);
   const [selected, setSelected] = useState<TradeRequestItem | null>(null);
@@ -138,6 +140,7 @@ export default function AdminTradeRequestsTable({
               </thead>
               <tbody className="divide-y divide-ts-border">
                 {orderedItems.map((item, index) => {
+                  const status = String(item.status || "").toUpperCase();
                   const isExecuteBusy =
                     busyId !== undefined &&
                     busyId !== null &&
@@ -148,6 +151,8 @@ export default function AdminTradeRequestsTable({
                     busyId !== null &&
                     String(busyId) === String(item.id) &&
                     busyAction === "reject";
+                  const canExecute = status === "PENDING_REVIEW";
+                  const canReject = status === "PENDING_REVIEW";
                   return (
                   <tr key={item.id ?? index}>
                     <td className="py-3 pr-4">{formatDate(item.created_at)}</td>
@@ -171,7 +176,12 @@ export default function AdminTradeRequestsTable({
                         <Button
                           type="button"
                           onClick={() => openExecute(item)}
-                          disabled={String(item.status) !== "PENDING_REVIEW" || isExecuteBusy}
+                          disabled={
+                            !canExecute ||
+                            isExecuteBusy ||
+                            disableActions
+                          }
+                          aria-disabled={disableActions}
                           className="bg-ts-success text-white hover:opacity-90"
                         >
                           {isExecuteBusy ? (
@@ -186,7 +196,12 @@ export default function AdminTradeRequestsTable({
                         <Button
                           type="button"
                           onClick={() => handleReject(item)}
-                          disabled={String(item.status) !== "PENDING_REVIEW" || isRejectBusy}
+                          disabled={
+                            !canReject ||
+                            isRejectBusy ||
+                            disableActions
+                          }
+                          aria-disabled={disableActions}
                           className="bg-ts-danger text-white hover:opacity-90"
                         >
                           {isRejectBusy ? (
@@ -209,6 +224,7 @@ export default function AdminTradeRequestsTable({
 
           <div className="mt-4 grid gap-3 md:hidden">
             {orderedItems.map((item, index) => {
+              const status = String(item.status || "").toUpperCase();
               const isExecuteBusy =
                 busyId !== undefined &&
                 busyId !== null &&
@@ -219,6 +235,8 @@ export default function AdminTradeRequestsTable({
                 busyId !== null &&
                 String(busyId) === String(item.id) &&
                 busyAction === "reject";
+              const canExecute = status === "PENDING_REVIEW";
+              const canReject = status === "PENDING_REVIEW";
               return (
               <div
                 key={item.id ?? index}
@@ -254,7 +272,12 @@ export default function AdminTradeRequestsTable({
                   <Button
                     type="button"
                     onClick={() => openExecute(item)}
-                    disabled={String(item.status) !== "PENDING_REVIEW" || isExecuteBusy}
+                    disabled={
+                      !canExecute ||
+                      isExecuteBusy ||
+                      disableActions
+                    }
+                    aria-disabled={disableActions}
                     className="bg-ts-success text-white hover:opacity-90"
                   >
                     {isExecuteBusy ? (
@@ -269,7 +292,12 @@ export default function AdminTradeRequestsTable({
                   <Button
                     type="button"
                     onClick={() => handleReject(item)}
-                    disabled={String(item.status) !== "PENDING_REVIEW" || isRejectBusy}
+                    disabled={
+                      !canReject ||
+                      isRejectBusy ||
+                      disableActions
+                    }
+                    aria-disabled={disableActions}
                     className="bg-ts-danger text-white hover:opacity-90"
                   >
                     {isRejectBusy ? (
@@ -386,7 +414,12 @@ export default function AdminTradeRequestsTable({
                   await onExecute(selected.id, form);
                   setExecuteOpen(false);
                 }}
-                disabled={busyAction === "execute"}
+                disabled={
+                  busyAction === "execute" ||
+                  disableActions ||
+                  String(selected?.status || "").toUpperCase() !== "PENDING_REVIEW"
+                }
+                aria-disabled={disableActions}
                 className="bg-ts-primary text-white hover:opacity-90"
               >
                 {busyAction === "execute" ? (

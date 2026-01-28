@@ -9,11 +9,13 @@ export default function DepositActions({
   onConfirm,
   canConfirm,
   loading = false,
+  disabled = false,
 }: {
   onCancel: () => void;
   onConfirm: () => void;
   canConfirm: boolean;
   loading?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -21,13 +23,14 @@ export default function DepositActions({
         type="button"
         onClick={onCancel}
         className="w-full bg-ts-hover text-ts-text-main hover:bg-ts-active sm:w-auto"
+        disabled={disabled}
       >
         Cancel
       </Button>
       <Button
         type="button"
         onClick={onConfirm}
-        disabled={!canConfirm || loading}
+        disabled={!canConfirm || loading || disabled}
         className="w-full bg-ts-primary text-white hover:opacity-90 sm:w-auto"
       >
         {loading ? (

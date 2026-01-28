@@ -218,6 +218,7 @@ export default function AdminTradesPage() {
             onReject={handleReject}
             busyId={actionState.id}
             busyAction={actionState.action}
+            disableActions={Boolean(actionState.action)}
           />
         </div>
       </AppShell>

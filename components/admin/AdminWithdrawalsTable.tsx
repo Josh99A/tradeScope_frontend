@@ -46,6 +46,7 @@ export default function AdminWithdrawalsTable({
   onReject,
   busyId,
   busyAction,
+  disableActions = false,
 }: {
   items: AdminWithdrawal[];
   onProcessing: (id: number | string) => void;
@@ -53,6 +54,7 @@ export default function AdminWithdrawalsTable({
   onReject: (id: number | string) => void;
   busyId?: number | string | null;
   busyAction?: "processing" | "paid" | "reject" | null;
+  disableActions?: boolean;
 }) {
   const [copiedId, setCopiedId] = useState<number | string | null>(null);
   const orderedItems = [...items].sort((a, b) => {
@@ -106,12 +108,13 @@ export default function AdminWithdrawalsTable({
                 </tr>
               </thead>
               <tbody className="divide-y divide-ts-border">
-                {orderedItems.map((item, index) => {
-                  const isProcessingBusy =
-                    busyId !== undefined &&
-                    busyId !== null &&
-                    String(busyId) === String(item.id) &&
-                    busyAction === "processing";
+              {orderedItems.map((item, index) => {
+              const status = String(item.status || "").toLowerCase();
+              const isProcessingBusy =
+                busyId !== undefined &&
+                busyId !== null &&
+                String(busyId) === String(item.id) &&
+                busyAction === "processing";
                   const isPaidBusy =
                     busyId !== undefined &&
                     busyId !== null &&
@@ -122,6 +125,9 @@ export default function AdminWithdrawalsTable({
                     busyId !== null &&
                     String(busyId) === String(item.id) &&
                     busyAction === "reject";
+                  const canProcess = ["pending", "pending_review"].includes(status);
+                  const canPay = ["processing"].includes(status);
+                  const canReject = ["pending", "pending_review", "processing"].includes(status);
                   return (
                   <tr key={item.id ?? index}>
                     <td className="py-3 pr-4">{formatDate(item.created_at)}</td>
@@ -157,7 +163,7 @@ export default function AdminWithdrawalsTable({
                       <Button
                         type="button"
                         onClick={() => copyAddress(item)}
-                        disabled={!item.address}
+                        disabled={!item.address || disableActions}
                         className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
                       >
                         {copiedId === item.id ? "Copied" : "Copy"}
@@ -171,7 +177,8 @@ export default function AdminWithdrawalsTable({
                           disabled={
                             !item.id ||
                             isProcessingBusy ||
-                            !(["pending", "pending_review"].includes(String(item.status).toLowerCase()))
+                            disableActions ||
+                            !canProcess
                           }
                           className="bg-ts-primary text-white hover:opacity-90"
                         >
@@ -190,7 +197,8 @@ export default function AdminWithdrawalsTable({
                           disabled={
                             !item.id ||
                             isPaidBusy ||
-                            String(item.status).toLowerCase() === "paid"
+                            disableActions ||
+                            !canPay
                           }
                           className="bg-ts-success text-white hover:opacity-90"
                         >
@@ -209,7 +217,8 @@ export default function AdminWithdrawalsTable({
                           disabled={
                             !item.id ||
                             isRejectBusy ||
-                            String(item.status).toLowerCase() === "rejected"
+                            disableActions ||
+                            !canReject
                           }
                           className="bg-ts-danger text-white hover:opacity-90"
                         >
@@ -232,6 +241,7 @@ export default function AdminWithdrawalsTable({
           </div>
           <div className="mt-4 grid gap-3 md:hidden">
             {orderedItems.map((item, index) => {
+              const status = String(item.status || "").toLowerCase();
               const isProcessingBusy =
                 busyId !== undefined &&
                 busyId !== null &&
@@ -247,6 +257,9 @@ export default function AdminWithdrawalsTable({
                 busyId !== null &&
                 String(busyId) === String(item.id) &&
                 busyAction === "reject";
+              const canProcess = ["pending", "pending_review"].includes(status);
+              const canPay = ["processing"].includes(status);
+              const canReject = ["pending", "pending_review", "processing"].includes(status);
               return (
               <div
                 key={item.id ?? index}
@@ -301,7 +314,7 @@ export default function AdminWithdrawalsTable({
                   <Button
                     type="button"
                     onClick={() => copyAddress(item)}
-                    disabled={!item.address}
+                    disabled={!item.address || disableActions}
                     className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
                   >
                     {copiedId === item.id ? "Copied" : "Copy address"}
@@ -312,7 +325,8 @@ export default function AdminWithdrawalsTable({
                     disabled={
                       !item.id ||
                       isProcessingBusy ||
-                      !(["pending", "pending_review"].includes(String(item.status).toLowerCase()))
+                      disableActions ||
+                      !canProcess
                     }
                     className="bg-ts-primary text-white hover:opacity-90"
                   >
@@ -331,7 +345,8 @@ export default function AdminWithdrawalsTable({
                     disabled={
                       !item.id ||
                       isPaidBusy ||
-                      String(item.status).toLowerCase() === "paid"
+                      disableActions ||
+                      !canPay
                     }
                     className="bg-ts-success text-white hover:opacity-90"
                   >
@@ -350,7 +365,8 @@ export default function AdminWithdrawalsTable({
                     disabled={
                       !item.id ||
                       isRejectBusy ||
-                      String(item.status).toLowerCase() === "rejected"
+                      disableActions ||
+                      !canReject
                     }
                     className="bg-ts-danger text-white hover:opacity-90"
                   >

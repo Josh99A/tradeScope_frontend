@@ -17,7 +17,29 @@ export async function POST(req: Request) {
     }
   );
 
-  const data = await res.json();
+  let data: unknown;
+  const contentType = res.headers.get("content-type") || "";
+  const rawText = await res.text();
+  if (contentType.includes("application/json")) {
+    try {
+      data = JSON.parse(rawText);
+    } catch (error) {
+      console.error("[Deposit] Invalid JSON from backend", {
+        status: res.status,
+        contentType,
+        error,
+        rawText: rawText.slice(0, 200),
+      });
+      data = { error: "Invalid response from backend." };
+    }
+  } else {
+    console.error("[Deposit] Non-JSON response from backend", {
+      status: res.status,
+      contentType,
+      rawText: rawText.slice(0, 200),
+    });
+    data = { error: "Unexpected response from backend." };
+  }
   const response = NextResponse.json(data, { status: res.status });
   appendSetCookies(res, response);
   return response;

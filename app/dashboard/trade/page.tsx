@@ -577,6 +577,7 @@ export default function TradeChart() {
                       ? "bg-ts-primary text-white"
                       : "text-ts-text-muted hover:text-ts-text-main"
                   )}
+                  disabled={tradeSubmitting}
                 >
                   {item}
                 </button>
@@ -593,6 +594,7 @@ export default function TradeChart() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search asset"
                 className="w-full pl-8 pr-3 py-2 text-sm rounded-md bg-ts-input-bg border border-ts-input-border focus:outline-none"
+                disabled={tradeSubmitting}
               />
             </form>
 
@@ -620,6 +622,7 @@ export default function TradeChart() {
                   ? "bg-ts-primary text-white border-ts-primary shadow-sm"
                   : "bg-ts-bg-main text-ts-text-main border-ts-border hover:border-ts-primary/40 hover:bg-ts-primary/10"
               )}
+              disabled={tradeSubmitting}
             >
               <AssetIcon symbol={symbol} size={16} />
               <span className="ml-1">{symbol}</span>
@@ -699,6 +702,7 @@ export default function TradeChart() {
                           ? "border-ts-primary bg-ts-primary text-white"
                           : "border-ts-border bg-ts-bg-main text-ts-text-muted hover:text-ts-text-main"
                       }`}
+                      disabled={tradeSubmitting}
                     >
                       {item.network}
                     </button>
@@ -721,6 +725,7 @@ export default function TradeChart() {
                   "py-2 rounded-md text-sm font-medium transition",
                   side === "buy" ? "bg-ts-success text-white" : "bg-ts-hover"
                 )}
+                disabled={tradeSubmitting}
               >
                 Buy
               </button>
@@ -730,6 +735,7 @@ export default function TradeChart() {
                   "py-2 rounded-md text-sm font-medium transition",
                   side === "sell" ? "bg-ts-danger text-white" : "bg-ts-hover"
                 )}
+                disabled={tradeSubmitting}
               >
                 Sell
               </button>
@@ -747,6 +753,7 @@ export default function TradeChart() {
                 }}
                 className="mt-1 w-full px-3 py-2 rounded-md bg-ts-input-bg border border-ts-input-border focus:outline-none"
                 placeholder="Enter amount"
+                disabled={tradeSubmitting}
               />
               {selectedAsset && (
                 <p className="mt-2 text-xs text-ts-text-muted">
@@ -785,6 +792,7 @@ export default function TradeChart() {
                 }}
                 className="mt-1 w-full px-3 py-2 rounded-md bg-ts-input-bg border border-ts-input-border focus:outline-none"
                 placeholder={priceUnavailable ? "Price unavailable" : "Enter USD amount"}
+                disabled={tradeSubmitting}
               />
               <p className="mt-2 text-xs text-ts-text-muted">
                 {priceLoading
@@ -805,13 +813,14 @@ export default function TradeChart() {
 
             <div className="sm:col-span-2">
               <label className="text-xs text-ts-text-muted">Notes (optional)</label>
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={3}
-                className="mt-1 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
-                placeholder="Instructions for admin (optional)"
-              />
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              className="mt-1 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
+              placeholder="Instructions for admin (optional)"
+              disabled={tradeSubmitting}
+            />
             </div>
           </div>
 

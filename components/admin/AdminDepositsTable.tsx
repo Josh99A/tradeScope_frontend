@@ -39,12 +39,14 @@ export default function AdminDepositsTable({
   onReject,
   busyId,
   busyAction,
+  disableActions = false,
 }: {
   items: AdminDeposit[];
   onConfirm: (id: number | string) => void;
   onReject: (id: number | string) => void;
   busyId?: number | string | null;
   busyAction?: "confirm" | "reject" | null;
+  disableActions?: boolean;
 }) {
   const orderedItems = [...items].sort((a, b) => {
     const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -76,7 +78,10 @@ export default function AdminDepositsTable({
                 </tr>
               </thead>
               <tbody className="divide-y divide-ts-border">
-                {orderedItems.map((item, index) => (
+                {orderedItems.map((item, index) => {
+                  const status = String(item.status || "").toLowerCase();
+                  const canAct = status === "pending_review";
+                  return (
                   <tr key={item.id ?? index}>
                     <td className="py-3 pr-4">{formatDate(item.created_at)}</td>
                     <td className="py-3 pr-4">{getUserLabel(item.user)}</td>
@@ -103,7 +108,8 @@ export default function AdminDepositsTable({
                           disabled={
                             !item.id ||
                             isBusy ||
-                            String(item.status).toLowerCase() !== "pending_review"
+                            disableActions ||
+                            !canAct
                           }
                           className="bg-ts-success text-white hover:opacity-90"
                         >
@@ -131,7 +137,8 @@ export default function AdminDepositsTable({
                           disabled={
                             !item.id ||
                             isBusy ||
-                            String(item.status).toLowerCase() !== "pending_review"
+                            disableActions ||
+                            !canAct
                           }
                           className="bg-ts-danger text-white hover:opacity-90"
                         >
@@ -149,12 +156,16 @@ export default function AdminDepositsTable({
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>
           <div className="mt-4 grid gap-3 md:hidden">
-            {orderedItems.map((item, index) => (
+            {orderedItems.map((item, index) => {
+              const status = String(item.status || "").toLowerCase();
+              const canAct = status === "pending_review";
+              return (
               <div
                 key={item.id ?? index}
                 className="rounded-lg border border-ts-border bg-ts-bg-main p-4"
@@ -191,7 +202,8 @@ export default function AdminDepositsTable({
                     disabled={
                       !item.id ||
                       isBusy ||
-                      String(item.status).toLowerCase() !== "pending_review"
+                      disableActions ||
+                      !canAct
                     }
                     className="bg-ts-success text-white hover:opacity-90"
                   >
@@ -219,7 +231,8 @@ export default function AdminDepositsTable({
                     disabled={
                       !item.id ||
                       isBusy ||
-                      String(item.status).toLowerCase() !== "pending_review"
+                      disableActions ||
+                      !canAct
                     }
                     className="bg-ts-danger text-white hover:opacity-90"
                   >
@@ -236,7 +249,8 @@ export default function AdminDepositsTable({
                   })()}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

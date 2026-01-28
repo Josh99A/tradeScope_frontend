@@ -346,6 +346,7 @@ export default function WalletPage() {
               type="button"
               onClick={() => handleDepositAction()}
               className="bg-ts-primary text-white hover:opacity-90"
+              disabled={submitting !== null}
             >
               Deposit
             </Button>
