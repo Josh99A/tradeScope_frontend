@@ -30,7 +30,7 @@ const getStatusLabel = (user: AdminUser) => {
   return "inactive";
 };
 
-const hasValidId = (value: AdminUser["id"]) => {
+const hasValidId = (value: AdminUser["id"]): value is string | number => {
   if (value === null || value === undefined) return false;
   if (typeof value === "number") return Number.isFinite(value);
   if (typeof value === "string") {
