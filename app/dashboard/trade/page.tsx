@@ -138,6 +138,7 @@ export default function TradeChart() {
   const [tradeNotice, setTradeNotice] = useState<string | null>(null);
   const [tradeSubmitting, setTradeSubmitting] = useState(false);
   const [requests, setRequests] = useState<TradeRequestItem[]>([]);
+  const lastPriceWarnRef = useRef<string | null>(null);
   const cachedPricesRef = useRef<Record<string, number>>({});
   const cachedPriceMetaRef = useRef<Record<string, number>>({});
   const hasLoadedRequestsRef = useRef(false);
@@ -446,6 +447,17 @@ export default function TradeChart() {
     ? priceMap[selectedAsset.symbol.toUpperCase()] || 0
     : 0;
   const priceUnavailable = !priceUsd || Number.isNaN(priceUsd);
+
+  useEffect(() => {
+    if (!selectedAsset || !priceUnavailable) return;
+    const symbol = selectedAsset.symbol?.toUpperCase?.() || "";
+    if (!symbol || lastPriceWarnRef.current === symbol) return;
+    lastPriceWarnRef.current = symbol;
+    console.warn("[Trade] Live price unavailable", {
+      symbol,
+      priceUsd,
+    });
+  }, [selectedAsset, priceUnavailable, priceUsd]);
 
   useEffect(() => {
     if (editingField === "usd") return;

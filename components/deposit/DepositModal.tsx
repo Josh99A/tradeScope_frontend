@@ -99,6 +99,7 @@ export default function DepositModal({
     null
   );
   const triedRef = useRef<string | null>(null);
+  const lastPriceWarnRef = useRef<string | null>(null);
   const [touched, setTouched] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const initialFocusRef = useRef<HTMLButtonElement | null>(null);
@@ -142,6 +143,17 @@ export default function DepositModal({
     numericAmount > 0 && numericAmount >= minDeposit && !!selectedAsset;
   const showError = touched && !isValid;
   const priceUnavailable = !priceUsd || Number.isNaN(priceUsd);
+
+  useEffect(() => {
+    if (!open || !selectedAsset || !priceUnavailable) return;
+    const symbolValue = selectedAsset.symbol?.toUpperCase?.() || "";
+    if (!symbolValue || lastPriceWarnRef.current === symbolValue) return;
+    lastPriceWarnRef.current = symbolValue;
+    console.warn("[Deposit] Live price unavailable", {
+      symbol: symbolValue,
+      priceUsd,
+    });
+  }, [open, selectedAsset, priceUnavailable, priceUsd]);
 
   useEffect(() => {
     if (open) {

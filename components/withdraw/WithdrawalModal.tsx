@@ -104,6 +104,7 @@ export default function WithdrawalModal({
     null
   );
   const triedRef = useRef<string | null>(null);
+  const lastPriceWarnRef = useRef<string | null>(null);
   const [proof, setProof] = useState<File | null>(null);
   const [touched, setTouched] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -154,6 +155,17 @@ export default function WithdrawalModal({
     !!selectedAsset.network;
   const showError = touched && !isValid;
   const priceUnavailable = !priceUsd || Number.isNaN(priceUsd);
+
+  useEffect(() => {
+    if (!open || !selectedAsset || !priceUnavailable) return;
+    const symbolValue = selectedAsset.symbol?.toUpperCase?.() || "";
+    if (!symbolValue || lastPriceWarnRef.current === symbolValue) return;
+    lastPriceWarnRef.current = symbolValue;
+    console.warn("[Withdraw] Live price unavailable", {
+      symbol: symbolValue,
+      priceUsd,
+    });
+  }, [open, selectedAsset, priceUnavailable, priceUsd]);
 
   useEffect(() => {
     if (open) {
