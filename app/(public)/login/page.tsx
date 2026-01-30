@@ -17,10 +17,11 @@ const Page = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextParam = searchParams.get("next");
-  const nextUrl =
-    nextParam && nextParam.startsWith("/")
-      ? nextParam
-      : "/dashboard";
+  const nextUrl = !nextParam || !nextParam.startsWith("/")
+    ? "/dashboard"
+    : nextParam.startsWith("/login") || nextParam.startsWith("/register")
+      ? "/dashboard"
+      : nextParam;
 
 
   const { refreshUser, isAuthenticated, loading: authLoading } = useAuth();
@@ -49,6 +50,7 @@ const Page = () => {
 
       toast.success("Welcome back! You're now signed in.");
       router.replace(nextUrl);
+      router.refresh();
 
     } catch (error) {
       const message =
@@ -65,6 +67,22 @@ const Page = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-ts-bg-main px-4">
       <div className="w-full max-w-md bg-ts-bg-card border border-ts-border rounded-xl p-8">
+
+        <div className="flex items-center justify-center gap-2 text-sm mb-6">
+          <Link
+            href="/login"
+            className="font-semibold text-ts-primary"
+          >
+            Login
+          </Link>
+          <span className="text-ts-text-muted">|</span>
+          <Link
+            href="/register"
+            className="text-ts-text-muted hover:text-ts-text-main transition"
+          >
+            Sign up
+          </Link>
+        </div>
 
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-ts-primary">

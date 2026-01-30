@@ -1,15 +1,7 @@
-import  TopNav  from "@/components/navigation/TopNav";
-import   HomePage from "@/components/home/HomePage";
-import Footer from "@/components/layout/Footer";
+import { redirect } from "next/navigation";
 
 const Page = () => {
- 
-
-  return (
-    <>
-      <HomePage />
-    </>
-  );
+  redirect("/login");
 }
 
 export default Page;
