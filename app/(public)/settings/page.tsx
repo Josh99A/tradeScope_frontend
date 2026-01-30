@@ -3,7 +3,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
-import ThemeToggle from "@/components/ui/ThemeToggle";
 import AppShell from "@/components/layout/AppShell";
 import DashboardShell from "@/components/layout/DashboardShell";
 import toast from "react-hot-toast";
@@ -112,13 +111,6 @@ const SettingsPage = () => {
             )}
 
             <form className="space-y-6" onSubmit={handleSubmit}>
-              <div className="flex items-center justify-between rounded-lg border border-ts-border bg-ts-bg-main px-3 py-2">
-                <div>
-                  <p className="text-sm font-medium text-ts-text-main">Theme</p>
-                  <p className="text-xs text-ts-text-muted">Switch light/dark mode.</p>
-                </div>
-                <ThemeToggle size="sm" />
-              </div>
               <div>
                 <label className="block text-sm mb-1">Username</label>
                 <input
