@@ -25,7 +25,7 @@ export default function TopNav({ isAuthenticated, user }: TopNavProps) {
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link
-          href="/"
+          href="/dashboard"
           className="text-lg font-bold tracking-tight text-ts-text-main"
         >
           Trade<span className="text-ts-primary">Scope</span>

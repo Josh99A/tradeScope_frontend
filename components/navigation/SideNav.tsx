@@ -25,7 +25,7 @@ export default function SideNav() {
     <aside className="hidden md:flex w-64 flex-col border-r border-ts-border bg-ts-bg-card">
       
       {/* Logo */}
-        <Link href="/" className="px-6 py-5 text-lg font-bold text-ts-text-main hover:opacity-80 transition-opacity">
+      <Link href="/dashboard" className="px-6 py-5 text-lg font-bold text-ts-text-main hover:opacity-80 transition-opacity">
           Trade<span className="text-ts-primary">Scope</span>
         </Link>
 

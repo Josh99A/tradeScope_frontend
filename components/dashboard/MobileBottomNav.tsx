@@ -4,7 +4,7 @@ import { Home, BarChart2, Wallet, List, User } from "lucide-react";
 import Link from "next/link";
 
 const navItems = [
-  { label: "Home", icon: Home, path: "/" },
+  { label: "Home", icon: Home, path: "/dashboard" },
   { label: "Trade", icon: BarChart2, path: "/dashboard/trade" },
   { label: "Wallet", icon: Wallet, path: "/wallet" },
   { label: "Markets", icon: List, path: "/markets" },
