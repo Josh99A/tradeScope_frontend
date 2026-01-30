@@ -49,6 +49,7 @@ type AdminUser = {
   deleted_at?: string | null;
   date_joined?: string;
   last_login?: string | null;
+  last_login_at?: string | null;
 };
 
 type AdminActivityItem = {
@@ -136,9 +137,11 @@ export default function AdminDashboardPage() {
     }
   }, [searchParams]);
 
-  const loadAdminData = async () => {
-    setLoading(true);
-    setNotice(null);
+  const loadAdminData = async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoading(true);
+      setNotice(null);
+    }
     try {
       const [depositData, withdrawalData, userData, activityData] =
         await Promise.all([
@@ -152,11 +155,15 @@ export default function AdminDashboardPage() {
       setUsers(normalizeList<AdminUser>(userData));
       setActivity(normalizeList<AdminActivityItem>(activityData));
     } catch (error) {
-      const message = getErrorMessage(error, "Admin access required or data unavailable.");
-      setNotice(message);
-      toast.error(message);
+      if (!options?.silent) {
+        const message = getErrorMessage(error, "Admin access required or data unavailable.");
+        setNotice(message);
+        toast.error(message);
+      }
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -165,6 +172,15 @@ export default function AdminDashboardPage() {
       loadAdminData();
     }
   }, [authLoading, isAdmin]);
+
+  useEffect(() => {
+    if (!authLoading && isAdmin && activeTab === "users") {
+      const intervalId = setInterval(() => {
+        loadAdminData({ silent: true });
+      }, 60000);
+      return () => clearInterval(intervalId);
+    }
+  }, [authLoading, isAdmin, activeTab]);
 
   if (authLoading) return null;
   if (!isAdmin) {

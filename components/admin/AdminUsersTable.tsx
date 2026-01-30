@@ -15,6 +15,7 @@ type AdminUser = {
   deleted_at?: string | null;
   date_joined?: string;
   last_login?: string | null;
+  last_login_at?: string | null;
 };
 
 const formatDate = (value?: string | null) => {
@@ -22,6 +23,46 @@ const formatDate = (value?: string | null) => {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString();
+};
+
+const getLastLoginMeta = (value?: string | null) => {
+  if (!value) {
+    return {
+      label: "Never",
+      className: "bg-ts-border text-ts-text-muted",
+    };
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return {
+      label: value,
+      className: "bg-ts-border text-ts-text-muted",
+    };
+  }
+  const diffMs = Date.now() - parsed.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  if (diffHours <= 44) {
+    return { label: formatDate(value), className: "bg-ts-success text-white" };
+  }
+  if (diffHours <= 168) {
+    return { label: formatDate(value), className: "bg-ts-warning text-black" };
+  }
+  return { label: formatDate(value), className: "bg-ts-danger text-white" };
+};
+
+const LastLoginBadge = ({
+  value,
+  fallback,
+}: {
+  value?: string | null;
+  fallback?: string | null;
+}) => {
+  const meta = getLastLoginMeta(value || fallback || undefined);
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${meta.className}`}>
+      {meta.label}
+    </span>
+  );
 };
 
 const getStatusLabel = (user: AdminUser) => {
@@ -77,6 +118,7 @@ export default function AdminUsersTable({
                   <th className="py-2 text-left font-medium">Status</th>
                   <th className="py-2 text-left font-medium">Role</th>
                   <th className="py-2 text-left font-medium">Joined</th>
+                  <th className="py-2 text-left font-medium">Last login</th>
                   <th className="py-2 text-left font-medium">Actions</th>
                 </tr>
               </thead>
@@ -98,6 +140,9 @@ export default function AdminUsersTable({
                         : "user"}
                     </td>
                     <td className="py-3 pr-4">{formatDate(user.date_joined)}</td>
+                    <td className="py-3 pr-4">
+                      <LastLoginBadge value={user.last_login_at} fallback={user.last_login} />
+                    </td>
                     <td className="py-3">
                       <div className="flex flex-wrap gap-2">
                         <Button
@@ -188,6 +233,10 @@ export default function AdminUsersTable({
                       <span className="text-ts-text-main">
                         {formatDate(user.date_joined)}
                       </span>
+                    </p>
+                    <p className="mt-1 text-xs text-ts-text-muted">
+                      Last login:{" "}
+                      <LastLoginBadge value={user.last_login_at} fallback={user.last_login} />
                     </p>
                   </div>
                   <StatusBadge value={getStatusLabel(user)} />
