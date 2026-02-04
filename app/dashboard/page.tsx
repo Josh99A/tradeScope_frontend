@@ -294,27 +294,28 @@ const Dashboard = () => {
 
   return (
     <AppShell>
-      <div className="space-y-4">
-         
+      <div className="space-y-6">
+        <div className="space-y-4 md:hidden">
+          <SymbolInfoCarousel />
+          <MobileDashboardHome
+            totalBalance={formattedBalance}
+            loadingBalance={loading}
+            onDeposit={handleDepositAction}
+            onWithdraw={handleWithdrawAction}
+          />
+          <TickerTapeWidget />
+          <MarketTable />
+          <NewsWidget />
+        </div>
 
-        <MobileDashboardHome
-          totalBalance={formattedBalance}
-          loadingBalance={loading}
-          onDeposit={handleDepositAction}
-          onWithdraw={handleWithdrawAction}
-        />
-
-        <TickerTapeWidget />
-
-       
-       
-
-        <div className="hidden md:block space-y-4">
+        <div className="hidden md:block space-y-6">
           <SymbolInfoCarousel />
           <WelcomePanel />
           <WalletCards />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <TickerTapeWidget />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
               <LiveTickerTable limit={8} />
               <LiveMarketGrid limit={6} />
@@ -326,13 +327,9 @@ const Dashboard = () => {
               <RecentActivity />
             </div>
           </div>
-        </div>
 
-        <div className="md:hidden">
-          <MarketTable />
+          <NewsWidget />
         </div>
-
-        <NewsWidget />
       </div>
 
       <DepositModal
