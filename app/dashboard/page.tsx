@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import AppShell from "@/components/layout/AppShell";
 import DepositModal from "@/components/deposit/DepositModal";
 import MobileDashboardHome from "@/components/dashboard/MobileDashboardHome";
+import MiniChartsRow from "@/components/market/MiniChartsRow";
 import NewsWidget from "@/components/market/NewsWidget";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import SymbolInfoCarousel from "@/components/market/SymbolInfoCarousel";
@@ -295,14 +296,15 @@ const Dashboard = () => {
   return (
     <AppShell>
       <div className="space-y-6 w-full overflow-x-hidden">
-        <div className="space-y-4 md:hidden pb-24">
+        <div className="space-y-4 md:hidden pb-16">
           <MobileDashboardHome
             totalBalance={formattedBalance}
             loadingBalance={loading}
             onDeposit={handleDepositAction}
             onWithdraw={handleWithdrawAction}
           />
-          <SymbolInfoCarousel />
+          <MiniChartsRow />
+          <SymbolInfoCarousel className="max-w-[560px] mx-auto" />
           
           <div className="overflow-x-auto">
             <MarketTable />
@@ -312,7 +314,8 @@ const Dashboard = () => {
 
         <div className="hidden md:block space-y-6">
           <TickerTapeWidget />
-          <SymbolInfoCarousel />
+          <MiniChartsRow />
+          <SymbolInfoCarousel className="max-w-[720px] mx-auto" />
           <WelcomePanel />
           <WalletCards />
 

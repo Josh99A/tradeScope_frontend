@@ -30,7 +30,7 @@ export default function MobileDashboardHome({
     (user as any)?.display_name || user?.username || user?.email?.split("@")[0] || "Trader";
 
   return (
-    <section className="md:hidden space-y-4 pb-24 pt-2">
+    <section className="md:hidden space-y-4 pb-4 pt-2">
       <div className="flex items-center justify-between rounded-xl border border-ts-border bg-ts-bg-card px-4 py-3">
         <Button
           variant="ghost"
