@@ -4,12 +4,14 @@ import MarketTable from "@/components/dashboard/MarketTable";
 import LiveMarketGrid from "@/components/market/LiveMarketGrid";
 import AppShell from "@/components/layout/AppShell";
 import DashboardShell from "@/components/layout/DashboardShell";
+import TickerTapeWidget from "@/components/market/TickerTapeWidget";
 
 const MarketsPage = () => {
   return (
     <DashboardShell>
       <AppShell>
         <div className="max-w-7xl mx-auto w-full space-y-6">
+          <TickerTapeWidget />
           <div>
             <h1 className="text-xl font-semibold text-ts-text-main">Markets</h1>
             <p className="text-sm text-ts-text-muted">

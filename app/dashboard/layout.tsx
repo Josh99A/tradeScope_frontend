@@ -19,6 +19,7 @@ const DashboardLayout = ({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const hideTopBarOnMobile = pathname === "/dashboard";
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -28,17 +29,31 @@ const DashboardLayout = ({
     }
   }, [loading, isAuthenticated, router, pathname, searchParams]);
 
+  useEffect(() => {
+    const handleOpenDrawer = () => setDrawerOpen(true);
+    if (typeof window !== "undefined") {
+      window.addEventListener("ts-open-drawer", handleOpenDrawer);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("ts-open-drawer", handleOpenDrawer);
+      }
+    };
+  }, []);
+
   if (loading) return null;
 
   
 
   return (
     <div className="min-h-screen bg-ts-bg-main">
-      <DashboardTopBar onMenuClick={() => setDrawerOpen(true)} />
+      <div className={hideTopBarOnMobile ? "hidden md:block" : undefined}>
+        <DashboardTopBar onMenuClick={() => setDrawerOpen(true)} />
+      </div>
 
       <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
-      <main className="pt-16 pb-20 md:pb-6 px-4">
+      <main className="pt-3 pb-20 md:pt-10 md:pb-6 px-4 md:px-6">
         {children}
       </main>
 

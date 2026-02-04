@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/layout/AppShell";
 import DashboardShell from "@/components/layout/DashboardShell";
 import ActivityTable from "@/components/wallet/ActivityTable";
 import { getWalletActivity } from "@/lib/wallet";
+import { useSearchParams } from "next/navigation";
 
 type ActivityItem = {
   id?: number | string;
@@ -30,6 +31,8 @@ const normalizeActivity = (data: unknown): ActivityItem[] => {
 export default function HistoryPage() {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const filterType = searchParams.get("type");
 
   const loadActivity = async () => {
     setNotice(null);
@@ -47,6 +50,17 @@ export default function HistoryPage() {
   useEffect(() => {
     loadActivity();
   }, []);
+
+  const filteredActivity = useMemo(() => {
+    if (!filterType) return activity;
+    const normalized = filterType.toLowerCase();
+    return activity.filter((item) => {
+      const text = `${item.type || ""} ${item.description || ""}`.toLowerCase();
+      if (normalized === "deposit") return text.includes("deposit");
+      if (normalized === "withdraw") return text.includes("withdraw");
+      return true;
+    });
+  }, [activity, filterType]);
 
   return (
     <DashboardShell>
@@ -68,7 +82,7 @@ export default function HistoryPage() {
           )}
 
           <ActivityTable
-            items={activity}
+            items={filteredActivity}
             title="Wallet activity"
             onRefresh={loadActivity}
           />

@@ -14,6 +14,7 @@ import Card from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import toast from "react-hot-toast";
 import AssetIcon from "@/components/ui/AssetIcon";
+import TickerTapeWidget from "@/components/market/TickerTapeWidget";
 
 declare global {
   interface Window {
@@ -534,6 +535,7 @@ export default function TradeChart() {
 
   return (
     <div className="space-y-4">
+      <TickerTapeWidget />
       <div
         className={cn(
           "rounded-xl border border-ts-border bg-ts-bg-card overflow-hidden",
