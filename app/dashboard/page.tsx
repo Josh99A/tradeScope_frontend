@@ -294,9 +294,8 @@ const Dashboard = () => {
 
   return (
     <AppShell>
-      <div className="space-y-6">
-        <div className="space-y-4 md:hidden">
-          <SymbolInfoCarousel />
+      <div className="space-y-6 w-full overflow-x-hidden">
+        <div className="space-y-4 md:hidden pb-24">
           <MobileDashboardHome
             totalBalance={formattedBalance}
             loadingBalance={loading}
@@ -304,7 +303,9 @@ const Dashboard = () => {
             onWithdraw={handleWithdrawAction}
           />
           <TickerTapeWidget />
-          <MarketTable />
+          <div className="overflow-x-auto">
+            <MarketTable />
+          </div>
           <NewsWidget />
         </div>
 

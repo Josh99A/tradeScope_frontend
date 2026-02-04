@@ -12,8 +12,8 @@ const navItems = [
 ];
 const MobileBottomNav = () => {
   return (
-    <nav className="fixed bottom-0 inset-x-0 h-16 bg-ts-bg-card border-t border-ts-border md:hidden z-30">
-      <div className="h-full flex justify-around items-center">
+    <nav className="fixed bottom-0 left-0 right-0 w-full bg-ts-bg-card border-t border-ts-border md:hidden z-40">
+      <div className="h-16 flex justify-around items-center pb-[env(safe-area-inset-bottom)]">
         {navItems.map(({ label, icon: Icon, path }) => (
           <Link key={label} href={path} className="flex flex-col items-center text-xs text-ts-text-muted hover:text-ts-primary transition">
             <Icon size={18} />
