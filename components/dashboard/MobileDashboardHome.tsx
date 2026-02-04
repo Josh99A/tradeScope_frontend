@@ -5,6 +5,7 @@ import { Menu, User, Wallet, ArrowDownCircle, ArrowUpCircle, List } from "lucide
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import SymbolInfoCarousel from "../market/SymbolInfoCarousel";
+import TickerTapeWidget from "../market/TickerTapeWidget";
 
 export default function MobileDashboardHome({
   totalBalance,
@@ -65,9 +66,7 @@ export default function MobileDashboardHome({
           )}
         </Link>
       </div>
-      <div className="md:hidden">
-          <SymbolInfoCarousel />
-        </div>
+      <TickerTapeWidget />
 
       <div className="rounded-xl border border-ts-border bg-ts-bg-card px-4 py-4">
         <div className="flex items-center gap-3">

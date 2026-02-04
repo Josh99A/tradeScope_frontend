@@ -36,7 +36,7 @@ const Page = () => {
     e.preventDefault();
 
     if (!email || !password) {
-      toast.error("Please enter your email and password.");
+      toast.error("Enter a valid email or username and password.");
       return;
     }
 
@@ -56,7 +56,7 @@ const Page = () => {
       const message =
         error instanceof Error
           ? error.message
-          : "Invalid email or password.";
+          : "Invalid email or username or password.";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -95,9 +95,9 @@ const Page = () => {
 
         <form className="space-y-5" onSubmit={handleSubmit}>
           <FormField
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
+            label="Email or username"
+            type="text"
+            placeholder="Email or username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

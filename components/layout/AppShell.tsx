@@ -11,7 +11,7 @@ export default function AppShell({
     <div className="flex min-h-screen bg-ts-bg-main text-ts-text-main">
       <SideNav />
       <div className="flex-1 flex flex-col">
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-0 md:p-4">{children}</main>
       </div>
     </div>
   );
