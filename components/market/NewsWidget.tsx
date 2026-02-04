@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 
 export default function NewsWidget({
@@ -8,24 +8,29 @@ export default function NewsWidget({
 }: {
   className?: string;
 }) {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const resolvedTheme = theme === "dark" ? "dark" : "light";
+  const colorTheme = resolvedTheme === "dark" ? "dark" : "light";
   const config = useMemo(
     () => ({
-      feedMode: "market",
-      market: "crypto",
-      isTransparent: true,
       displayMode: "regular",
+      feedMode: "all_symbols",
+      isTransparent: false,
       width: "100%",
       height: 520,
-      colorTheme: resolvedTheme,
+      colorTheme,
       locale: "en",
     }),
-    [resolvedTheme]
+    [colorTheme]
   );
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     if (!containerRef.current) return;
     containerRef.current.innerHTML = "";
     const script = document.createElement("script");
@@ -33,9 +38,9 @@ export default function NewsWidget({
       "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
     script.async = true;
     script.type = "text/javascript";
-    script.text = JSON.stringify(config);
+    script.innerHTML = JSON.stringify(config);
     containerRef.current.appendChild(script);
-  }, [config]);
+  }, [config, mounted]);
 
   return (
     <section
@@ -50,7 +55,23 @@ export default function NewsWidget({
           Latest crypto headlines and market updates.
         </p>
       </div>
-      <div ref={containerRef} className="w-full" />
+      <div className="tradingview-widget-container px-2 pb-2">
+        <div
+          ref={containerRef}
+          className="tradingview-widget-container__widget"
+        />
+        <div className="tradingview-widget-copyright text-[10px] text-ts-text-muted px-2 pb-2">
+          <a
+            href="https://www.tradingview.com/news/top-providers/tradingview/"
+            rel="noopener nofollow"
+            target="_blank"
+            className="text-ts-primary hover:underline"
+          >
+            Top stories
+          </a>{" "}
+          <span className="text-ts-text-muted">by TradingView</span>
+        </div>
+      </div>
     </section>
   );
 }

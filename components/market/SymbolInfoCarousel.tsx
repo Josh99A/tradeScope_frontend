@@ -17,7 +17,7 @@ const DEFAULT_SYMBOLS = [
 export default function SymbolInfoCarousel({
   symbols = DEFAULT_SYMBOLS,
   className = "",
-  autoAdvanceMs = 5000,
+  autoAdvanceMs = 8000,
 }: {
   symbols?: { label: string; symbol: string }[];
   className?: string;
