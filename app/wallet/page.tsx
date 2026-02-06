@@ -86,8 +86,6 @@ const getHoldingValue = (holding: HoldingItem, fallbackRate: number) => {
   return (available + locked) * fallbackRate;
 };
 
-const PRICE_CACHE_TTL_MS = 30_000;
-
 
 export default function WalletPage() {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
@@ -123,10 +121,15 @@ export default function WalletPage() {
       const raw = window.localStorage.getItem("ts_prices_cache");
       const metaRaw = window.localStorage.getItem("ts_prices_cache_meta");
       const meta = metaRaw ? (JSON.parse(metaRaw) as { ts?: number }) : null;
-      const cacheFresh = meta?.ts && Date.now() - meta.ts < PRICE_CACHE_TTL_MS;
+      const now = Date.now();
+      if (!meta?.ts || now - meta.ts > 5_000) {
+        window.localStorage.removeItem("ts_prices_cache");
+        window.localStorage.removeItem("ts_prices_cache_meta");
+        return;
+      }
       if (raw) {
         const parsed = JSON.parse(raw) as Record<string, number>;
-        if (cacheFresh && parsed && typeof parsed === "object") {
+        if (parsed && typeof parsed === "object") {
           cachedPricesRef.current = parsed;
           setPrices((prev) => ({ ...parsed, ...prev }));
         }

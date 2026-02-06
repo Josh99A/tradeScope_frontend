@@ -201,6 +201,13 @@ export default function TradeChart() {
     try {
       const raw = window.localStorage.getItem("ts_prices_cache");
       const metaRaw = window.localStorage.getItem("ts_prices_cache_meta");
+      const meta = metaRaw ? (JSON.parse(metaRaw) as { ts?: number }) : null;
+      const now = Date.now();
+      if (!meta?.ts || now - meta.ts > 5_000) {
+        window.localStorage.removeItem("ts_prices_cache");
+        window.localStorage.removeItem("ts_prices_cache_meta");
+        return;
+      }
       if (raw) {
         const parsed = JSON.parse(raw) as Record<string, number>;
         if (parsed && typeof parsed === "object") {
@@ -319,7 +326,7 @@ export default function TradeChart() {
     const cached = cachedPricesRef.current[symbol];
     const cachedAt = cachedPriceMetaRef.current[symbol] || 0;
     const now = Date.now();
-    const cacheFresh = cached && now - cachedAt < 30 * 1000;
+    const cacheFresh = cached && now - cachedAt < 10 * 1000;
     if (cacheFresh) {
       setPriceMap((prev) => ({ ...prev, [symbol]: cached }));
       return;
@@ -331,28 +338,28 @@ export default function TradeChart() {
         const data = await getPrices([symbol]);
         const nextPrices = data?.prices || {};
         setPriceMap((prev) => ({ ...prev, ...nextPrices }));
-        if (Object.keys(nextPrices).length > 0) {
-          cachedPricesRef.current = {
-            ...cachedPricesRef.current,
-            ...nextPrices,
-          };
-          cachedPriceMetaRef.current = {
-            ...cachedPriceMetaRef.current,
-            [symbol]: Date.now(),
-          };
-          try {
-            window.localStorage.setItem(
-              "ts_prices_cache",
-              JSON.stringify(cachedPricesRef.current)
-            );
-            window.localStorage.setItem(
-              "ts_prices_cache_meta",
-              JSON.stringify(cachedPriceMetaRef.current)
-            );
-          } catch {
-            // ignore cache write errors
+          if (Object.keys(nextPrices).length > 0) {
+            cachedPricesRef.current = {
+              ...cachedPricesRef.current,
+              ...nextPrices,
+            };
+            cachedPriceMetaRef.current = {
+              ...cachedPriceMetaRef.current,
+              [symbol]: Date.now(),
+            };
+            try {
+              window.localStorage.setItem(
+                "ts_prices_cache",
+                JSON.stringify(cachedPricesRef.current)
+              );
+              window.localStorage.setItem(
+                "ts_prices_cache_meta",
+                JSON.stringify({ ts: Date.now() })
+              );
+            } catch {
+              // ignore cache write errors
+            }
           }
-        }
       } catch {
         const message = "Unable to load live price.";
         setPriceError(message);
