@@ -335,7 +335,7 @@ export default function TradeChart() {
       setPriceLoading(true);
       setPriceError(null);
       try {
-        const data = await getPrices([symbol]);
+        const data = await getPrices([symbol], { forceRefresh: true });
         const nextPrices = data?.prices || {};
         setPriceMap((prev) => ({ ...prev, ...nextPrices }));
           if (Object.keys(nextPrices).length > 0) {

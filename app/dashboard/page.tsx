@@ -141,7 +141,42 @@ const Dashboard = () => {
       ]);
       setDeposits(normalizeActivity(depositsData));
       setWithdrawals(normalizeActivity(withdrawalsData));
-      setHoldings(normalizeHoldings(holdingsData));
+      const normalizedHoldings = normalizeHoldings(holdingsData);
+      setHoldings(normalizedHoldings);
+
+      const symbols = normalizedHoldings
+        .map((holding) => String(holding.asset || "").toUpperCase())
+        .filter(Boolean);
+      console.debug("[Dashboard] Holdings loaded", {
+        count: normalizedHoldings.length,
+        symbols,
+      });
+      if (symbols.length > 0) {
+        const priceData = await getPrices(symbols, { forceRefresh: true });
+        const nextPrices = priceData?.prices || {};
+        console.debug("[Dashboard] Prices fetched", {
+          symbols,
+          count: Object.keys(nextPrices).length,
+          rateLimited: priceData?.rate_limited,
+        });
+        if (Object.keys(nextPrices).length > 0) {
+          setPrices((prev) => ({ ...nextPrices, ...prev }));
+          try {
+            window.localStorage.removeItem("ts_prices_cache");
+            window.localStorage.removeItem("ts_prices_cache_meta");
+            window.localStorage.setItem(
+              "ts_prices_cache",
+              JSON.stringify(nextPrices)
+            );
+            window.localStorage.setItem(
+              "ts_prices_cache_meta",
+              JSON.stringify({ ts: Date.now() })
+            );
+          } catch {
+            // ignore cache write errors
+          }
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -165,7 +200,7 @@ const Dashboard = () => {
     if (missing.length === 0) return;
     const load = async () => {
       try {
-        const data = await getPrices(missing);
+        const data = await getPrices(missing, { forceRefresh: true });
         const nextPrices = data?.prices || {};
         setPrices((prev) => ({ ...nextPrices, ...prev }));
         setRateLimited(Boolean(data?.rate_limited));
@@ -237,12 +272,21 @@ const Dashboard = () => {
   };
 
   const totalPortfolioUsd = useMemo(() => {
-    return holdings.reduce((sum, holding) => {
+    const total = holdings.reduce((sum, holding) => {
       const asset = String(holding.asset || "").toUpperCase();
       const fallbackRate = prices[asset] || getHoldingRate(holding);
       return sum + getHoldingValue(holding, fallbackRate);
     }, 0);
+    return total;
   }, [holdings, prices]);
+
+  useEffect(() => {
+    console.debug("[Dashboard] Total USD calc", {
+      holdings: holdings.length,
+      priceKeys: Object.keys(prices).length,
+      total: totalPortfolioUsd,
+    });
+  }, [holdings.length, prices, totalPortfolioUsd]);
 
   const formattedBalance = !loading
     ? new Intl.NumberFormat("en-US", {
@@ -333,7 +377,15 @@ const Dashboard = () => {
           <MiniChartsRow />
           <SymbolInfoCarousel className="max-w-[720px] mx-auto" />
           <WelcomePanel />
-          <WalletCards />
+          <WalletCards
+            totalUsd={totalPortfolioUsd}
+            holdingsCount={holdings.length}
+            loading={loading}
+            pendingDeposit={pendingDeposit}
+            pendingWithdrawal={pendingWithdrawal}
+            onWithdraw={handleWithdrawAction}
+            withdrawDisabled={submitting !== null}
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">

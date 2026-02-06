@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import AppShell from "@/components/layout/AppShell";
 import DashboardShell from "@/components/layout/DashboardShell";
-import Card from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import WalletCards from "@/components/dashboard/WalletCards";
 import ActivityTable from "@/components/wallet/ActivityTable";
 import StatusTable from "@/components/wallet/StatusTable";
 import HoldingsList from "@/components/wallet/HoldingsList";
@@ -181,6 +181,12 @@ export default function WalletPage() {
 
       const normalizedHoldings = normalizeHoldings(holdingsData);
       setHoldings(normalizedHoldings);
+      console.debug("[Wallet] Holdings loaded", {
+        count: normalizedHoldings.length,
+        symbols: normalizedHoldings
+          .map((holding) => String(holding.asset || "").toUpperCase())
+          .filter(Boolean),
+      });
       const derivedRates = normalizedHoldings.reduce<Record<string, number>>(
         (acc, holding) => {
           const rate = getHoldingRate(holding);
@@ -193,6 +199,36 @@ export default function WalletPage() {
       );
       if (Object.keys(derivedRates).length > 0) {
         setPrices((prev) => ({ ...derivedRates, ...prev }));
+      }
+
+      const symbols = normalizedHoldings
+        .map((holding) => String(holding.asset || "").toUpperCase())
+        .filter(Boolean);
+      if (symbols.length > 0) {
+        const priceData = await getPrices(symbols, { forceRefresh: true });
+        const nextPrices = priceData?.prices || {};
+        console.debug("[Wallet] Prices fetched", {
+          symbols,
+          count: Object.keys(nextPrices).length,
+          rateLimited: priceData?.rate_limited,
+        });
+        if (Object.keys(nextPrices).length > 0) {
+          setPrices((prev) => ({ ...nextPrices, ...prev }));
+          try {
+            window.localStorage.removeItem("ts_prices_cache");
+            window.localStorage.removeItem("ts_prices_cache_meta");
+            window.localStorage.setItem(
+              "ts_prices_cache",
+              JSON.stringify(nextPrices)
+            );
+            window.localStorage.setItem(
+              "ts_prices_cache_meta",
+              JSON.stringify({ ts: Date.now() })
+            );
+          } catch {
+            // ignore cache write errors
+          }
+        }
       }
     } catch {
       setNotice("Unable to load wallet data.");
@@ -223,7 +259,7 @@ export default function WalletPage() {
     setPricesLoading(true);
     setPricesError(null);
     try {
-      const data = await getPrices(missing);
+      const data = await getPrices(missing, { forceRefresh: true });
       const nextPrices = data?.prices || {};
       setPrices((prev) => ({ ...prev, ...nextPrices }));
       setRateLimited(Boolean(data?.rate_limited));
@@ -261,6 +297,14 @@ export default function WalletPage() {
     const fallbackRate = prices[asset] || getHoldingRate(holding);
     return sum + getHoldingValue(holding, fallbackRate);
   }, 0);
+
+  useEffect(() => {
+    console.debug("[Wallet] Total USD calc", {
+      holdings: holdings.length,
+      priceKeys: Object.keys(prices).length,
+      total: totalPortfolioUsd,
+    });
+  }, [holdings.length, prices, totalPortfolioUsd]);
 
   const handleWithdraw = async (payload: WithdrawalPayload) => {
     if (submitting) return;
@@ -376,65 +420,15 @@ export default function WalletPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <Card>
-              <p className="text-xs uppercase tracking-wide text-ts-text-muted">
-                Total available (USD estimate)
-              </p>
-              <div className="mt-2 text-2xl font-semibold text-ts-text-main">
-                {totalPortfolioUsd
-                  ? new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    }).format(totalPortfolioUsd)
-                  : "--"}
-              </div>
-              <p className="mt-4 text-xs text-ts-text-muted">
-                Based on cached crypto price estimates.
-              </p>
-            </Card>
-
-            <Card>
-              <p className="text-xs uppercase tracking-wide text-ts-text-muted">
-                Holdings count
-              </p>
-              <div className="mt-2 text-2xl font-semibold text-ts-text-main">
-                {holdings.length ? holdings.length.toLocaleString() : "--"}
-              </div>
-              <p className="mt-4 text-xs text-ts-text-muted">
-                Active crypto assets with balances.
-              </p>
-            </Card>
-
-            <Card>
-              <h2 className="text-sm font-semibold text-ts-text-main">
-                Withdrawals
-              </h2>
-              <p className="text-xs text-ts-text-muted">
-                Submit a withdrawal request for review.
-              </p>
-              {pendingDeposit && (
-                <div className="mt-3 rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-xs text-ts-text-main">
-                  You have a pending deposit request. Withdrawals are processed within 24 hours. Do not submit multiple requests.
-                </div>
-              )}
-              {pendingWithdrawal && (
-                <div className="mt-3 rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-xs text-ts-text-main">
-                  Your withdrawal request is pending and will be processed within 24 hours.
-                </div>
-              )}
-              <div className="mt-4">
-                <Button
-                  type="button"
-                  onClick={() => handleWithdrawAction()}
-                  disabled={submitting !== null || loading || pendingWithdrawal}
-                  className="w-full bg-ts-danger text-white hover:opacity-90"
-                >
-                  Request withdrawal
-                </Button>
-              </div>
-            </Card>
-          </div>
+          <WalletCards
+            totalUsd={totalPortfolioUsd}
+            holdingsCount={holdings.length}
+            loading={loading}
+            pendingDeposit={pendingDeposit}
+            pendingWithdrawal={pendingWithdrawal}
+            onWithdraw={() => handleWithdrawAction()}
+            withdrawDisabled={submitting !== null}
+          />
 
           <HoldingsList
             holdings={holdings}

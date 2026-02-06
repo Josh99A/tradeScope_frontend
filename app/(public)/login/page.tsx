@@ -4,6 +4,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginUser } from "@/lib/auth";
+import { getHoldings } from "@/lib/wallet";
+import { getPrices } from "@/lib/prices";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import FormField from "@/components/auth/FormField";
@@ -47,6 +49,38 @@ const Page = () => {
 
       // Sync auth state
       await refreshUser();
+
+      try {
+        const holdingsData = await getHoldings({ forceRefresh: true });
+        const holdings = Array.isArray(holdingsData?.holdings)
+          ? holdingsData.holdings
+          : Array.isArray(holdingsData)
+          ? holdingsData
+          : [];
+        const symbols = holdings
+          .map((holding: any) => String(holding?.asset || "").toUpperCase())
+          .filter(Boolean);
+        if (symbols.length > 0) {
+          const priceData = await getPrices(symbols, { forceRefresh: true });
+          const nextPrices = priceData?.prices || {};
+          try {
+            window.localStorage.removeItem("ts_prices_cache");
+            window.localStorage.removeItem("ts_prices_cache_meta");
+            window.localStorage.setItem(
+              "ts_prices_cache",
+              JSON.stringify(nextPrices)
+            );
+            window.localStorage.setItem(
+              "ts_prices_cache_meta",
+              JSON.stringify({ ts: Date.now() })
+            );
+          } catch {
+            // ignore cache write errors
+          }
+        }
+      } catch {
+        // ignore price prefetch errors
+      }
 
       toast.success("Welcome back! You're now signed in.");
       router.replace(nextUrl);
