@@ -61,6 +61,8 @@ const getHoldingValue = (holding: HoldingItem, fallbackRate: number) => {
   return (available + locked) * fallbackRate;
 };
 
+const PRICE_CACHE_TTL_MS = 30_000;
+
 export default function WalletCards() {
   const router = useRouter();
   const [holdings, setHoldings] = useState<HoldingItem[]>([]);
@@ -72,9 +74,12 @@ export default function WalletCards() {
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem("ts_prices_cache");
+      const metaRaw = window.localStorage.getItem("ts_prices_cache_meta");
+      const meta = metaRaw ? (JSON.parse(metaRaw) as { ts?: number }) : null;
+      const cacheFresh = meta?.ts && Date.now() - meta.ts < PRICE_CACHE_TTL_MS;
       if (raw) {
         const parsed = JSON.parse(raw) as Record<string, number>;
-        if (parsed && typeof parsed === "object") {
+        if (cacheFresh && parsed && typeof parsed === "object") {
           setPrices(parsed);
         }
       }
@@ -121,6 +126,10 @@ export default function WalletCards() {
             window.localStorage.setItem(
               "ts_prices_cache",
               JSON.stringify({ ...nextPrices, ...prices })
+            );
+            window.localStorage.setItem(
+              "ts_prices_cache_meta",
+              JSON.stringify({ ts: Date.now() })
             );
           } catch {
             // ignore cache write errors

@@ -319,7 +319,7 @@ export default function TradeChart() {
     const cached = cachedPricesRef.current[symbol];
     const cachedAt = cachedPriceMetaRef.current[symbol] || 0;
     const now = Date.now();
-    const cacheFresh = cached && now - cachedAt < 5 * 60 * 1000;
+    const cacheFresh = cached && now - cachedAt < 30 * 1000;
     if (cacheFresh) {
       setPriceMap((prev) => ({ ...prev, [symbol]: cached }));
       return;
