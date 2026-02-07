@@ -285,12 +285,6 @@ export default function WithdrawalModal({
           <div className="rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-sm text-ts-text-main">
             Withdrawals are processed within 24 hours.
           </div>
-          <div className="rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-sm text-ts-text-main">
-            Only provide a designated address of your selected asset/coin. Using the
-            wrong network could mean losing your funds. When in doubt, make a small
-            withdrawal amount first to confirm or contact our customer support for
-            assistance.
-          </div>
           {locked && (
             <div className="rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-sm text-ts-text-main">
               {lockMessage ||
@@ -416,6 +410,12 @@ export default function WithdrawalModal({
           )}
 
           <section className="space-y-3">
+            <div className="rounded-lg border border-ts-warning/40 bg-ts-warning/10 px-3 py-2 text-sm text-ts-text-main">
+              Only provide a designated address of your selected asset/coin. Using the
+              wrong network could mean losing your funds. When in doubt, make a small
+              withdrawal amount first to confirm or contact our customer support for
+              assistance.
+            </div>
             <div>
               <label className="text-xs uppercase tracking-wide text-ts-text-muted">
                 Destination address <span className="text-ts-danger">*</span>
