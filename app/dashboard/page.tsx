@@ -161,18 +161,9 @@ const Dashboard = () => {
       const symbols = normalizedHoldings
         .map((holding) => String(holding.asset || "").toUpperCase())
         .filter(Boolean);
-      console.debug("[Dashboard] Holdings loaded", {
-        count: normalizedHoldings.length,
-        symbols,
-      });
       if (symbols.length > 0) {
         const priceData = await getPrices(symbols, { forceRefresh: true });
         const nextPrices = priceData?.prices || {};
-        console.debug("[Dashboard] Prices fetched", {
-          symbols,
-          count: Object.keys(nextPrices).length,
-          rateLimited: priceData?.rate_limited,
-        });
         if (Object.keys(nextPrices).length > 0) {
           setPrices((prev) => ({ ...nextPrices, ...prev }));
           try {
@@ -293,14 +284,6 @@ const Dashboard = () => {
     }, 0);
     return total;
   }, [holdings, prices]);
-
-  useEffect(() => {
-    console.debug("[Dashboard] Total USD calc", {
-      holdings: holdings.length,
-      priceKeys: Object.keys(prices).length,
-      total: totalPortfolioUsd,
-    });
-  }, [holdings.length, prices, totalPortfolioUsd]);
 
   const formattedBalance = !loading
     ? new Intl.NumberFormat("en-US", {

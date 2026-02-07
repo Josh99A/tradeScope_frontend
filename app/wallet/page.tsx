@@ -195,12 +195,6 @@ export default function WalletPage() {
 
       const normalizedHoldings = normalizeHoldings(holdingsData);
       setHoldings(normalizedHoldings);
-      console.debug("[Wallet] Holdings loaded", {
-        count: normalizedHoldings.length,
-        symbols: normalizedHoldings
-          .map((holding) => String(holding.asset || "").toUpperCase())
-          .filter(Boolean),
-      });
       const derivedRates = normalizedHoldings.reduce<Record<string, number>>(
         (acc, holding) => {
           const rate = getHoldingRate(holding);
@@ -221,11 +215,6 @@ export default function WalletPage() {
       if (symbols.length > 0) {
         const priceData = await getPrices(symbols, { forceRefresh: true });
         const nextPrices = priceData?.prices || {};
-        console.debug("[Wallet] Prices fetched", {
-          symbols,
-          count: Object.keys(nextPrices).length,
-          rateLimited: priceData?.rate_limited,
-        });
         if (Object.keys(nextPrices).length > 0) {
           setPrices((prev) => ({ ...nextPrices, ...prev }));
           try {
@@ -312,18 +301,9 @@ export default function WalletPage() {
     return sum + getHoldingValue(holding, fallbackRate);
   }, 0);
 
-  useEffect(() => {
-    console.debug("[Wallet] Total USD calc", {
-      holdings: holdings.length,
-      priceKeys: Object.keys(prices).length,
-      total: totalPortfolioUsd,
-    });
-  }, [holdings.length, prices, totalPortfolioUsd]);
-
   const handleWithdraw = async (payload: WithdrawalPayload) => {
     if (submitting) return;
     const amount = parseNumber(payload.amount);
-    console.log("[Withdraw] Payload", payload);
     if (!payload.network) {
       const message = "Select a network for this withdrawal.";
       setNotice(message);

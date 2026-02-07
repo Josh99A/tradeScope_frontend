@@ -70,10 +70,6 @@ const fetchCoinCapPrices = async (symbols: string[]) => {
   });
 
   if (toFetch.length === 0) {
-    console.debug("[CoinCap] Cache hit", {
-      symbols,
-      cachedCount: Object.keys(cached).length,
-    });
     return { prices: cached, rateLimited: false };
   }
 
@@ -166,11 +162,6 @@ export async function GET(req: Request) {
     .map((asset) => asset.trim().toUpperCase())
     .filter(Boolean);
 
-  console.debug("[CoinCap] Price request", {
-    assetsParam,
-    symbols,
-    hasKey: Boolean(COINCAP_API_KEY),
-  });
   const prices: Record<string, number> = {};
   if (symbols.includes("USD")) {
     prices.USD = 1;
