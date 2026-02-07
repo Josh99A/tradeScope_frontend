@@ -6,11 +6,13 @@ export default function DepositAmountInput({
   value,
   onChange,
   error,
+  hint,
   disabled = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  hint?: string;
   disabled?: boolean;
 }) {
   return (
@@ -35,7 +37,7 @@ export default function DepositAmountInput({
           error ? "text-ts-danger" : "text-ts-text-muted"
         }`}
       >
-        {error || "Minimum deposit amount is 1 unit."}
+        {error || hint || ""}
       </p>
     </div>
   );

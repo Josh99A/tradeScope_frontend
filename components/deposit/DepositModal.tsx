@@ -399,6 +399,11 @@ export default function DepositModal({
                   ? "Live price unavailable."
                   : undefined
                 }
+                hint={
+                  selectedAsset
+                    ? `Minimum: ${formatTrimmed(minDepositAsset, assetDecimals)} ${symbol} ($${formatTrimmed(minDepositUsd, 4)})`
+                    : undefined
+                }
                 disabled={isBusy}
               />
             <div>
