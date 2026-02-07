@@ -469,10 +469,13 @@ export default function DepositModal({
               if (locked || priceUnavailable) {
                 return;
               }
-              const numericUsd = parseAmount(usdAmount);
+              const normalizedAmount = parseAmount(
+                formatTrimmed(numericAmount, assetDecimals)
+              );
+              const numericUsd = parseAmount(formatTrimmed(parseAmount(usdAmount), 4));
               onConfirm({
                 assetId: selectedAsset.id,
-                amount: numericAmount,
+                amount: normalizedAmount,
                 usdAmount: numericUsd > 0 ? numericUsd : undefined,
               });
             }}
