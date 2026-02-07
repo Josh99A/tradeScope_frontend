@@ -132,16 +132,16 @@ export default function DepositModal({
 
   const symbol = selectedAsset?.symbol || "";
   const numericAmount = parseAmount(amount);
+  const numericUsdAmount = parseAmount(usdAmount);
   const priceUsd = symbol ? prices?.[symbol.toUpperCase()] || 0 : 0;
-  const minDeposit = parseAmount(String(selectedAsset?.min_deposit || "0"));
-  const assetDecimals =
-    symbol === "USDT" || symbol === "USDC"
-      ? 2
-      : symbol === "XRP" || symbol === "DOGE"
-      ? 4
-      : 8;
+  const minDepositUsd = parseAmount(String(selectedAsset?.min_deposit || "0"));
+  const minDepositAsset = priceUsd > 0 ? minDepositUsd / priceUsd : 0;
+  const assetDecimals = 8;
   const isValid =
-    numericAmount > 0 && numericAmount >= minDeposit && !!selectedAsset;
+    numericAmount > 0 &&
+    numericUsdAmount > 0 &&
+    numericUsdAmount >= minDepositUsd &&
+    !!selectedAsset;
   const showError = touched && !isValid;
   const priceUnavailable = !priceUsd || Number.isNaN(priceUsd);
 
@@ -187,7 +187,7 @@ export default function DepositModal({
     }
     const nextAmount = parseAmount(amount);
     if (priceUsd > 0 && Number.isFinite(nextAmount)) {
-      setUsdAmount(formatTrimmed(nextAmount * priceUsd, 2));
+      setUsdAmount(formatTrimmed(nextAmount * priceUsd, 4));
     } else {
       setUsdAmount("");
     }
@@ -367,20 +367,20 @@ export default function DepositModal({
           )}
           {selectedAsset && (
             <div className="rounded-lg border border-ts-border bg-ts-bg-main px-3 py-2 text-xs text-ts-text-muted">
-              Minimum deposit:{" "}
-              <span className="text-ts-text-main">
-                {minDeposit}
-                <span className="ml-2 inline-flex items-center">
-                  <AssetIcon symbol={symbol} size={14} />
-                  <span className="sr-only">{symbol}</span>
-                </span>
-              </span>
+              Minimum deposit (fixed):{" "}
+              <span className="text-ts-text-main">${formatTrimmed(minDepositUsd, 4)}</span>
               {priceUsd ? (
                 <span className="text-ts-text-muted">
                   {" "}
-                  (~${formatTrimmed(minDeposit * priceUsd, 2)})
+                  (~{formatTrimmed(minDepositAsset, assetDecimals)}{" "}
+                  <span className="inline-flex items-center">
+                    <AssetIcon symbol={symbol} size={14} />
+                    <span className="sr-only">{symbol}</span>
+                  </span>)
                 </span>
-              ) : null}
+              ) : (
+                <span className="text-ts-text-muted"> (asset amount updates with live price)</span>
+              )}
             </div>
           )}
 
@@ -394,7 +394,7 @@ export default function DepositModal({
                 }}
                 error={
                   showError
-                  ? `Minimum deposit is ${minDeposit}.`
+                  ? `Minimum deposit is $${formatTrimmed(minDepositUsd, 4)}.`
                   : priceUnavailable
                   ? "Live price unavailable."
                   : undefined
@@ -408,7 +408,7 @@ export default function DepositModal({
               <input
                 type="number"
                 min="0"
-                step="0.01"
+                step="0.0001"
                 value={usdAmount}
                 onChange={(event) => {
                   setTouched(true);

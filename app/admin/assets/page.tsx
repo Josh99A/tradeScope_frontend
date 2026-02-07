@@ -75,6 +75,7 @@ export default function AdminAssetsPage() {
 
   const [assets, setAssets] = useState<AssetItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
@@ -220,6 +221,7 @@ export default function AdminAssetsPage() {
   };
 
   const handleSubmit = async () => {
+    if (isSaving) return;
     setNotice(null);
     if (!form.name || !form.symbol || !form.network) {
       const message = "Name, symbol, and network are required.";
@@ -270,6 +272,7 @@ export default function AdminAssetsPage() {
     }
 
     try {
+      setIsSaving(true);
       if (editing) {
         await updateAdminAsset(editing.id, body);
         toast.success("Asset updated.");
@@ -283,6 +286,8 @@ export default function AdminAssetsPage() {
       const message = getErrorMessage(error, "Unable to save asset.");
       setNotice(message);
       toast.error(message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -379,9 +384,9 @@ export default function AdminAssetsPage() {
                       <th className="py-2 text-left font-medium">QR</th>
                       <th className="py-2 text-left font-medium">Network</th>
                       <th className="py-2 text-left font-medium">Status</th>
-                      <th className="py-2 text-left font-medium">Min deposit</th>
-                      <th className="py-2 text-left font-medium">Min withdraw</th>
-                      <th className="py-2 text-left font-medium">Fee</th>
+                      <th className="py-2 text-left font-medium">Min deposit (USD)</th>
+                      <th className="py-2 text-left font-medium">Min withdraw (USD)</th>
+                      <th className="py-2 text-left font-medium">Fee (USD)</th>
                       <th className="py-2 text-left font-medium">Updated</th>
                       <th className="py-2 text-left font-medium">Actions</th>
                     </tr>
@@ -410,9 +415,9 @@ export default function AdminAssetsPage() {
                             value={asset.is_active ? "active" : "inactive"}
                           />
                         </td>
-                        <td className="py-3 pr-4">{asset.min_deposit}</td>
-                        <td className="py-3 pr-4">{asset.min_withdraw}</td>
-                        <td className="py-3 pr-4">{asset.withdraw_fee}</td>
+                        <td className="py-3 pr-4">${asset.min_deposit}</td>
+                        <td className="py-3 pr-4">${asset.min_withdraw}</td>
+                        <td className="py-3 pr-4">${asset.withdraw_fee}</td>
                         <td className="py-3 pr-4">
                           {formatDate(asset.updated_at)}
                         </td>
@@ -470,19 +475,19 @@ export default function AdminAssetsPage() {
                         <div>
                           <p>Min deposit</p>
                           <p className="text-ts-text-main">
-                            {asset.min_deposit}
+                            ${asset.min_deposit}
                           </p>
                         </div>
                         <div>
                           <p>Min withdraw</p>
                           <p className="text-ts-text-main">
-                            {asset.min_withdraw}
+                            ${asset.min_withdraw}
                           </p>
                         </div>
                         <div>
                           <p>Fee</p>
                           <p className="text-ts-text-main">
-                            {asset.withdraw_fee}
+                            ${asset.withdraw_fee}
                           </p>
                         </div>
                         <div>
@@ -525,7 +530,10 @@ export default function AdminAssetsPage() {
             <button
               type="button"
               className="absolute inset-0 bg-black/50"
-              onClick={() => setModalOpen(false)}
+              onClick={() => {
+                if (isSaving) return;
+                setModalOpen(false);
+              }}
               aria-label="Close"
             />
             <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-ts-border bg-ts-bg-card p-5 shadow-xl">
@@ -535,8 +543,12 @@ export default function AdminAssetsPage() {
                 </h2>
                 <Button
                   type="button"
-                  onClick={() => setModalOpen(false)}
+                  onClick={() => {
+                    if (isSaving) return;
+                    setModalOpen(false);
+                  }}
                   className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
+                  disabled={isSaving}
                 >
                   Close
                 </Button>
@@ -722,10 +734,13 @@ export default function AdminAssetsPage() {
                 </div>
                 <div>
                   <label htmlFor="asset-min-deposit" className="text-xs text-ts-text-muted">
-                    Minimum deposit (asset units) <span className="text-ts-danger">*</span>
+                    Minimum deposit (USD) <span className="text-ts-danger">*</span>
                   </label>
                   <input
                     id="asset-min-deposit"
+                    type="number"
+                    min="0"
+                    step="0.0001"
                     value={form.min_deposit}
                     onChange={(event) =>
                       setForm((prev) => ({
@@ -733,16 +748,19 @@ export default function AdminAssetsPage() {
                         min_deposit: event.target.value,
                       }))
                     }
-                    placeholder="0.0"
+                    placeholder="e.g. 50.00"
                     className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
                   <label htmlFor="asset-min-withdraw" className="text-xs text-ts-text-muted">
-                    Minimum withdraw (asset units) <span className="text-ts-danger">*</span>
+                    Minimum withdraw (USD) <span className="text-ts-danger">*</span>
                   </label>
                   <input
                     id="asset-min-withdraw"
+                    type="number"
+                    min="0"
+                    step="0.0001"
                     value={form.min_withdraw}
                     onChange={(event) =>
                       setForm((prev) => ({
@@ -750,16 +768,19 @@ export default function AdminAssetsPage() {
                         min_withdraw: event.target.value,
                       }))
                     }
-                    placeholder="0.0"
+                    placeholder="e.g. 100.00"
                     className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
                   <label htmlFor="asset-withdraw-fee" className="text-xs text-ts-text-muted">
-                    Withdraw fee (asset units) <span className="text-ts-danger">*</span>
+                    Withdraw fee (USD) <span className="text-ts-danger">*</span>
                   </label>
                   <input
                     id="asset-withdraw-fee"
+                    type="number"
+                    min="0"
+                    step="0.0001"
                     value={form.withdraw_fee}
                     onChange={(event) =>
                       setForm((prev) => ({
@@ -767,7 +788,7 @@ export default function AdminAssetsPage() {
                         withdraw_fee: event.target.value,
                       }))
                     }
-                    placeholder="0.0"
+                    placeholder="e.g. 2.50"
                     className="mt-2 w-full rounded-md border border-ts-input-border bg-ts-input-bg px-3 py-2 text-sm"
                   />
                 </div>
@@ -775,8 +796,12 @@ export default function AdminAssetsPage() {
               <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
                 <Button
                   type="button"
-                  onClick={() => setModalOpen(false)}
+                  onClick={() => {
+                    if (isSaving) return;
+                    setModalOpen(false);
+                  }}
                   className="bg-ts-bg-main text-ts-text-main border border-ts-border hover:border-ts-primary/40"
+                  disabled={isSaving}
                 >
                   Cancel
                 </Button>
@@ -784,8 +809,9 @@ export default function AdminAssetsPage() {
                   type="button"
                   onClick={handleSubmit}
                   className="bg-ts-primary text-white hover:opacity-90"
+                  disabled={isSaving}
                 >
-                  Save
+                  {isSaving ? "Saving..." : "Save"}
                 </Button>
               </div>
             </div>

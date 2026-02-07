@@ -138,19 +138,17 @@ export default function WithdrawalModal({
 
   const symbol = selectedAsset?.symbol || "";
   const numericAmount = parseAmount(amount);
+  const numericUsdAmount = parseAmount(usdAmount);
   const priceUsd = symbol ? prices?.[symbol.toUpperCase()] || 0 : 0;
-  const minWithdraw = parseAmount(String(selectedAsset?.min_withdraw || "0"));
-  const fee = parseAmount(String(selectedAsset?.withdraw_fee || "0"));
-  const assetDecimals =
-    symbol === "USDT" || symbol === "USDC"
-      ? 2
-      : symbol === "XRP" || symbol === "DOGE"
-      ? 4
-      : 8;
+  const minWithdrawUsd = parseAmount(String(selectedAsset?.min_withdraw || "0"));
+  const withdrawFeeUsd = parseAmount(String(selectedAsset?.withdraw_fee || "0"));
+  const assetDecimals = 8;
+  const minWithdrawAsset = priceUsd > 0 ? minWithdrawUsd / priceUsd : 0;
+  const fee = priceUsd > 0 ? withdrawFeeUsd / priceUsd : 0;
   const totalDebit = numericAmount + fee;
   const isValid =
     numericAmount > 0 &&
-    numericAmount >= minWithdraw &&
+    numericUsdAmount >= minWithdrawUsd &&
     address.trim().length > 0 &&
     !!selectedAsset &&
     !!selectedAsset.network;
@@ -201,7 +199,7 @@ export default function WithdrawalModal({
     }
     const nextAmount = parseAmount(amount);
     if (priceUsd > 0 && Number.isFinite(nextAmount)) {
-      setUsdAmount(formatTrimmed(nextAmount * priceUsd, 2));
+      setUsdAmount(formatTrimmed(nextAmount * priceUsd, 4));
     } else {
       setUsdAmount("");
     }
@@ -383,34 +381,34 @@ export default function WithdrawalModal({
                 Network: <span className="text-ts-text-main">{selectedAsset.network}</span>
               </p>
               <p>
-                Minimum withdraw:{" "}
+                Minimum withdraw (fixed):{" "}
                 <span className="text-ts-text-main">
-                  {minWithdraw}
-                  <span className="ml-2 inline-flex items-center">
-                    <AssetIcon symbol={symbol} size={14} />
-                    <span className="sr-only">{symbol}</span>
-                  </span>
+                  ${formatTrimmed(minWithdrawUsd, 4)}
                 </span>
                 {priceUsd ? (
                   <span className="text-ts-text-muted">
                     {" "}
-                    (~${formatTrimmed(minWithdraw * priceUsd, 2)})
+                    (~{formatTrimmed(minWithdrawAsset, assetDecimals)}
+                    <span className="ml-2 inline-flex items-center">
+                      <AssetIcon symbol={symbol} size={14} />
+                      <span className="sr-only">{symbol}</span>
+                    </span>)
                   </span>
                 ) : null}
               </p>
               <p>
-                Withdrawal fee:{" "}
+                Withdrawal fee (fixed):{" "}
                 <span className="text-ts-text-main">
-                  {fee}
-                  <span className="ml-2 inline-flex items-center">
-                    <AssetIcon symbol={symbol} size={14} />
-                    <span className="sr-only">{symbol}</span>
-                  </span>
+                  ${formatTrimmed(withdrawFeeUsd, 4)}
                 </span>
                 {priceUsd ? (
                   <span className="text-ts-text-muted">
                     {" "}
-                    (~${formatTrimmed(fee * priceUsd, 2)})
+                    (~{formatTrimmed(fee, assetDecimals)}
+                    <span className="ml-2 inline-flex items-center">
+                      <AssetIcon symbol={symbol} size={14} />
+                      <span className="sr-only">{symbol}</span>
+                    </span>)
                   </span>
                 ) : null}
               </p>
@@ -462,7 +460,7 @@ export default function WithdrawalModal({
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
+                step="0.0001"
                   value={usdAmount}
                   onChange={(event) => {
                     setTouched(true);
@@ -483,7 +481,7 @@ export default function WithdrawalModal({
               <p>
                 Fee:{" "}
                 <span className="text-ts-text-main">
-                  {fee}
+                  {formatTrimmed(fee, assetDecimals)}
                   <span className="ml-2 inline-flex items-center">
                     <AssetIcon symbol={symbol} size={14} />
                     <span className="sr-only">{symbol}</span>
@@ -493,7 +491,7 @@ export default function WithdrawalModal({
               <p>
                 Total debit:{" "}
                 <span className="text-ts-text-main">
-                  {totalDebit}
+                  {formatTrimmed(totalDebit, assetDecimals)}
                   <span className="ml-2 inline-flex items-center">
                     <AssetIcon symbol={symbol} size={14} />
                     <span className="sr-only">{symbol}</span>
@@ -530,7 +528,7 @@ export default function WithdrawalModal({
             )}
             {showError && (
               <p className="text-xs text-ts-danger">
-                Amount must be at least the minimum withdrawal.
+                Amount must be at least ${formatTrimmed(minWithdrawUsd, 4)}.
               </p>
             )}
           </section>

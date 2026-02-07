@@ -754,6 +754,7 @@ export default function TradeChart() {
               <label className="text-xs text-ts-text-muted">Amount (Asset) <span className="text-ts-danger">*</span></label>
               <input
                 type="number"
+                step="0.00000001"
                 value={amountAsset}
                 required
                 onChange={(e) => {
