@@ -94,10 +94,30 @@ const getNotificationLink = (action?: string, isAdmin?: boolean) => {
 
 const formatMeta = (meta?: Record<string, unknown> | null) => {
   if (!meta || typeof meta !== "object") return "";
+  const labelMap: Record<string, string> = {
+    deposit_record_id: "Deposit ID",
+    withdrawal_record_id: "Withdrawal ID",
+    trade_request_record_id: "Trade Request ID",
+  };
   const parts: string[] = [];
-  Object.entries(meta).forEach(([key, value]) => {
+  const entries = Object.entries(meta);
+  entries.sort(([a], [b]) => {
+    const aScore = a.endsWith("_record_id") ? 0 : 1;
+    const bScore = b.endsWith("_record_id") ? 0 : 1;
+    if (aScore !== bScore) return aScore - bScore;
+    return a.localeCompare(b);
+  });
+  entries.forEach(([key, value]) => {
     if (value === null || value === undefined) return;
-    const label = key.replace(/_/g, " ");
+    if (key.endsWith("_id") && !key.endsWith("_record_id")) {
+      const hasRecordId = entries.some(([k, v]) => {
+        if (v === null || v === undefined) return false;
+        const prefix = key.slice(0, -3);
+        return k === `${prefix}_record_id`;
+      });
+      if (hasRecordId) return;
+    }
+    const label = labelMap[key] || key.replace(/_/g, " ");
     const text =
       typeof value === "string" || typeof value === "number"
         ? String(value)

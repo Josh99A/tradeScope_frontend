@@ -15,6 +15,7 @@ import {
 
 type TradeRequestItem = {
   id?: number | string;
+  record_id?: string;
   user?: {
     id?: number | string;
     email?: string;
@@ -46,6 +47,20 @@ const normalizeList = <T,>(data: unknown): T[] => {
     return maybe.results || maybe.items || [];
   }
   return [];
+};
+
+const getResponseRecordId = (payload: unknown): string | null => {
+  if (!payload || typeof payload !== "object") return null;
+  const recordId = (payload as { record_id?: unknown }).record_id;
+  if (typeof recordId === "string" && recordId.trim()) return recordId.trim();
+  const fallbackId = (payload as { id?: unknown }).id;
+  if (
+    typeof fallbackId === "string" ||
+    typeof fallbackId === "number"
+  ) {
+    return String(fallbackId);
+  }
+  return null;
 };
 
 const getErrorMessage = (error: unknown, fallback: string) => {
@@ -122,9 +137,10 @@ export default function AdminTradesPage() {
     try {
       if (actionState.action) return;
       setActionState({ id, action: "execute" });
-      await executeTradeRequest(id, payload);
+      const response = await executeTradeRequest(id, payload);
       await loadRequests();
-      toast.success("Trade request executed.");
+      const recordId = getResponseRecordId(response) || String(id);
+      toast.success(`Trade request executed (${recordId}).`);
     } catch (error) {
       const message = getErrorMessage(error, "Action failed. Please try again.");
       setNotice(message);
@@ -139,9 +155,10 @@ export default function AdminTradesPage() {
     try {
       if (actionState.action) return;
       setActionState({ id, action: "reject" });
-      await rejectTradeRequest(id, reason);
+      const response = await rejectTradeRequest(id, reason);
       await loadRequests();
-      toast.success("Trade request rejected.");
+      const recordId = getResponseRecordId(response) || String(id);
+      toast.success(`Trade request rejected (${recordId}).`);
     } catch (error) {
       const message = getErrorMessage(error, "Action failed. Please try again.");
       setNotice(message);

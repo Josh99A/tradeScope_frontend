@@ -84,6 +84,20 @@ const getHoldingValue = (holding: HoldingItem, fallbackRate: number) => {
   return (available + locked) * fallbackRate;
 };
 
+const getResponseRecordId = (payload: unknown): string | null => {
+  if (!payload || typeof payload !== "object") return null;
+  const recordId = (payload as { record_id?: unknown }).record_id;
+  if (typeof recordId === "string" && recordId.trim()) return recordId.trim();
+  const fallbackId = (payload as { id?: unknown }).id;
+  if (
+    typeof fallbackId === "string" ||
+    typeof fallbackId === "number"
+  ) {
+    return String(fallbackId);
+  }
+  return null;
+};
+
 const Dashboard = () => {
   const [holdings, setHoldings] = useState<HoldingItem[]>([]);
   const [deposits, setDeposits] = useState<ActivityItem[]>([]);
@@ -335,13 +349,18 @@ const Dashboard = () => {
     }
     setSubmitting("withdraw");
     try {
-      await withdrawFunds({
+      const response = await withdrawFunds({
         ...payload,
         asset_id: payload.assetId,
         usd_amount: payload.usdAmount,
         proof: payload.proof || "",
       });
-      toast.success("Withdrawal request submitted.");
+      const recordId = getResponseRecordId(response);
+      toast.success(
+        recordId
+          ? `Withdrawal request submitted (${recordId}).`
+          : "Withdrawal request submitted."
+      );
       setWithdrawOpen(false);
       await fetchDashboardData();
     } catch (error) {
@@ -421,9 +440,18 @@ const Dashboard = () => {
           if (submitting) return;
           setSubmitting("deposit");
           try {
-            await depositFunds({ amount, asset_id: assetId, usd_amount: usdAmount });
+            const response = await depositFunds({
+              amount,
+              asset_id: assetId,
+              usd_amount: usdAmount,
+            });
             setDepositOpen(false);
-            toast.success("Deposit request submitted.");
+            const recordId = getResponseRecordId(response);
+            toast.success(
+              recordId
+                ? `Deposit request submitted (${recordId}).`
+                : "Deposit request submitted."
+            );
             await fetchDashboardData();
           } catch (error) {
             const message =

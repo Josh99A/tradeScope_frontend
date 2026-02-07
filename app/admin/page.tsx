@@ -95,6 +95,20 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+const getResponseRecordId = (payload: unknown): string | null => {
+  if (!payload || typeof payload !== "object") return null;
+  const recordId = (payload as { record_id?: unknown }).record_id;
+  if (typeof recordId === "string" && recordId.trim()) return recordId.trim();
+  const fallbackId = (payload as { id?: unknown }).id;
+  if (
+    typeof fallbackId === "string" ||
+    typeof fallbackId === "number"
+  ) {
+    return String(fallbackId);
+  }
+  return null;
+};
+
 
 const confirmAdminAction = (message: string) => {
   if (typeof window === "undefined") return false;
@@ -213,9 +227,10 @@ export default function AdminDashboardPage() {
         return;
       }
       setActionState({ id, action: actionKey });
-      await action();
+      const response = await action();
       await loadAdminData();
-      toast.success("Action completed successfully.");
+      const recordId = getResponseRecordId(response) || String(id);
+      toast.success(`Action completed (${recordId}).`);
     } catch (error) {
       const message = getErrorMessage(error, "Action failed. Please try again.");
       setNotice(message);

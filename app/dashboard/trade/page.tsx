@@ -35,6 +35,7 @@ type AssetItem = {
 
 type TradeRequestItem = {
   id?: number | string;
+  record_id?: string;
   symbol?: string;
   network?: string;
   side?: string;
@@ -49,6 +50,20 @@ type TradeRequestItem = {
   admin_note?: string;
   rejection_reason?: string;
   created_at?: string;
+};
+
+const getResponseRecordId = (payload: unknown): string | null => {
+  if (!payload || typeof payload !== "object") return null;
+  const recordId = (payload as { record_id?: unknown }).record_id;
+  if (typeof recordId === "string" && recordId.trim()) return recordId.trim();
+  const fallbackId = (payload as { id?: unknown }).id;
+  if (
+    typeof fallbackId === "string" ||
+    typeof fallbackId === "number"
+  ) {
+    return String(fallbackId);
+  }
+  return null;
 };
 
 const normalizeSymbol = (value: string, quote: string) => {
@@ -512,7 +527,7 @@ export default function TradeChart() {
     }
     setTradeSubmitting(true);
     try {
-      await createTradeRequest({
+      const response = await createTradeRequest({
         asset_id: selectedAsset.id,
         side: side.toUpperCase(),
         requested_amount_asset: numericAsset,
@@ -525,8 +540,12 @@ export default function TradeChart() {
       setAmountUsd("");
       setNote("");
       setEditingField(null);
-      setTradeNotice("Trade request submitted for admin review.");
-      toast.success("Trade request submitted for admin review.");
+      const recordId = getResponseRecordId(response);
+      const successMessage = recordId
+        ? `Trade request submitted for admin review (${recordId}).`
+        : "Trade request submitted for admin review.";
+      setTradeNotice(successMessage);
+      toast.success(successMessage);
       loadTradeRequests();
     } catch (err) {
       const message =
